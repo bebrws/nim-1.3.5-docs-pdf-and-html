@@ -1,0 +1,633 @@
+\hypertarget{nim-destructors-and-move-semantics}{%
+\section{Nim Destructors and Move
+Semantics}\label{nim-destructors-and-move-semantics}}
+
+\begin{description}
+\item[Authors]
+Andreas Rumpf
+\item[Version]
+1.3.5
+\end{description}
+
+\hypertarget{about-this-document}{%
+\subsection{About this document}\label{about-this-document}}
+
+This document describes the upcoming Nim runtime which does not use
+classical GC algorithms anymore but is based on destructors and move
+semantics. The new runtime's advantages are that Nim programs become
+oblivious to the involved heap sizes and programs are easier to write to
+make effective use of multi-core machines. As a nice bonus, files and
+sockets and the like will not require manual \texttt{close} calls
+anymore.
+
+This document aims to be a precise specification about how move
+semantics and destructors work in Nim.
+
+\hypertarget{motivating-example}{%
+\subsection{Motivating example}\label{motivating-example}}
+
+With the language mechanisms described here a custom seq could be
+written as:
+
+\begin{verbatim}
+type
+  myseq*[T] = object
+    len, cap: int
+    data: ptr UncheckedArray[T]
+
+proc `=destroy`*[T](x: var myseq[T]) =
+  if x.data != nil:
+    for i in 0..<x.len: `=destroy`(x[i])
+    dealloc(x.data)
+
+proc `=`*[T](a: var myseq[T]; b: myseq[T]) =
+  # do nothing for self-assignments:
+  if a.data == b.data: return
+  `=destroy`(a)
+  wasMoved(a)
+  a.len = b.len
+  a.cap = b.cap
+  if b.data != nil:
+    a.data = cast[typeof(a.data)](alloc(a.cap * sizeof(T)))
+    for i in 0..<a.len:
+      a.data[i] = b.data[i]
+
+proc `=sink`*[T](a: var myseq[T]; b: myseq[T]) =
+  # move assignment, optional.
+  # Compiler is using `=destroy` and `copyMem` when not provided
+  `=destroy`(a)
+  wasMoved(a)
+  a.len = b.len
+  a.cap = b.cap
+  a.data = b.data
+
+proc add*[T](x: var myseq[T]; y: sink T) =
+  if x.len >= x.cap: resize(x)
+  x.data[x.len] = y
+  inc x.len
+
+proc `[]`*[T](x: myseq[T]; i: Natural): lent T =
+  assert i < x.len
+  x.data[i]
+
+proc `[]=`*[T](x: var myseq[T]; i: Natural; y: sink T) =
+  assert i < x.len
+  x.data[i] = y
+
+proc createSeq*[T](elems: varargs[T]): myseq[T] =
+  result.cap = elems.len
+  result.len = elems.len
+  result.data = cast[typeof(result.data)](alloc(result.cap * sizeof(T)))
+  for i in 0..<result.len: result.data[i] = elems[i]
+
+proc len*[T](x: myseq[T]): int {.inline.} = x.len
+\end{verbatim}
+
+\hypertarget{lifetime-tracking-hooks}{%
+\subsection{Lifetime-tracking hooks}\label{lifetime-tracking-hooks}}
+
+The memory management for Nim's standard \texttt{string} and
+\texttt{seq} types as well as other standard collections is performed
+via so called "Lifetime-tracking hooks" or "type-bound operators". There
+are 3 different hooks for each (generic or concrete) object type
+\texttt{T} (\texttt{T} can also be a \texttt{distinct} type) that are
+called implicitly by the compiler.
+
+(Note: The word "hook" here does not imply any kind of dynamic binding
+or runtime indirections, the implicit calls are statically bound and
+potentially inlined.)
+
+\hypertarget{destroy-hook}{%
+\subsubsection{\texorpdfstring{{=destroy}
+hook}{=destroy hook}}\label{destroy-hook}}
+
+A {=destroy} hook frees the object's associated memory and releases
+other associated resources. Variables are destroyed via this hook when
+they go out of scope or when the routine they were declared in is about
+to return.
+
+The prototype of this hook for a type \texttt{T} needs to be:
+
+\begin{verbatim}
+proc `=destroy`(x: var T)
+\end{verbatim}
+
+The general pattern in \texttt{=destroy} looks like:
+
+\begin{verbatim}
+proc `=destroy`(x: var T) =
+  # first check if 'x' was moved to somewhere else:
+  if x.field != nil:
+    freeResource(x.field)
+\end{verbatim}
+
+\hypertarget{sink-hook}{%
+\subsubsection{\texorpdfstring{{=sink}
+hook}{=sink hook}}\label{sink-hook}}
+
+A {=sink} hook moves an object around, the resources are stolen from the
+source and passed to the destination. It is ensured that source's
+destructor does not free the resources afterwards by setting the object
+to its default value (the value the object's state started in). Setting
+an object \texttt{x} back to its default value is written as
+\texttt{wasMoved(x)}. When not provided the compiler is using a
+combination of {=destroy} and {copyMem} instead. This is efficient hence
+users rarely need to implement their own {=sink} operator, it is enough
+to provide {=destroy} and {=}, compiler will take care about the rest.
+
+The prototype of this hook for a type \texttt{T} needs to be:
+
+\begin{verbatim}
+proc `=sink`(dest: var T; source: T)
+\end{verbatim}
+
+The general pattern in \texttt{=sink} looks like:
+
+\begin{verbatim}
+proc `=sink`(dest: var T; source: T) =
+  `=destroy`(dest)
+  wasMoved(dest)
+  dest.field = source.field
+\end{verbatim}
+
+\textbf{Note}: \texttt{=sink} does not need to check for
+self-assignments. How self-assignments are handled is explained later in
+this document.
+
+\hypertarget{copy-hook}{%
+\subsubsection{\texorpdfstring{{=} (copy)
+hook}{= (copy) hook}}\label{copy-hook}}
+
+The ordinary assignment in Nim conceptually copies the values. The
+\texttt{=} hook is called for assignments that couldn't be transformed
+into \texttt{=sink} operations.
+
+The prototype of this hook for a type \texttt{T} needs to be:
+
+\begin{verbatim}
+proc `=`(dest: var T; source: T)
+\end{verbatim}
+
+The general pattern in \texttt{=} looks like:
+
+\begin{verbatim}
+proc `=`(dest: var T; source: T) =
+  # protect against self-assignments:
+  if dest.field != source.field:
+    `=destroy`(dest)
+    wasMoved(dest)
+    dest.field = duplicateResource(source.field)
+\end{verbatim}
+
+The \texttt{=} proc can be marked with the \texttt{\{.error.\}} pragma.
+Then any assignment that otherwise would lead to a copy is prevented at
+compile-time.
+
+\hypertarget{move-semantics}{%
+\subsection{Move semantics}\label{move-semantics}}
+
+A "move" can be regarded as an optimized copy operation. If the source
+of the copy operation is not used afterwards, the copy can be replaced
+by a move. This document uses the notation \texttt{lastReadOf(x)} to
+describe that \texttt{x} is not used afterwards. This property is
+computed by a static control flow analysis but can also be enforced by
+using \texttt{system.move} explicitly.
+
+\hypertarget{swap}{%
+\subsection{Swap}\label{swap}}
+
+The need to check for self-assignments and also the need to destroy
+previous objects inside \texttt{=} and \texttt{=sink} is a strong
+indicator to treat \texttt{system.swap} as a builtin primitive of its
+own that simply swaps every field in the involved objects via
+\texttt{copyMem} or a comparable mechanism. In other words,
+\texttt{swap(a,\ b)} is \textbf{not} implemented as
+\texttt{let\ tmp\ =\ move(b);\ b\ =\ move(a);\ a\ =\ move(tmp)}.
+
+This has further consequences:
+
+\begin{itemize}
+\tightlist
+\item
+  Objects that contain pointers that point to the same object are not
+  supported by Nim's model. Otherwise swapped objects would end up in an
+  inconsistent state.
+\item
+  Seqs can use \texttt{realloc} in the implementation.
+\end{itemize}
+
+\hypertarget{sink-parameters}{%
+\subsection{Sink parameters}\label{sink-parameters}}
+
+To move a variable into a collection usually \texttt{sink} parameters
+are involved. A location that is passed to a \texttt{sink} parameter
+should not be used afterwards. This is ensured by a static analysis over
+a control flow graph. If it cannot be proven to be the last usage of the
+location, a copy is done instead and this copy is then passed to the
+sink parameter.
+
+A sink parameter \emph{may} be consumed once in the proc's body but
+doesn't have to be consumed at all. The reason for this is that
+signatures like
+\texttt{proc\ put(t:\ var\ Table;\ k:\ sink\ Key,\ v:\ sink\ Value)}
+should be possible without any further overloads and \texttt{put} might
+not take ownership of \texttt{k} if \texttt{k} already exists in the
+table. Sink parameters enable an affine type system, not a linear type
+system.
+
+The employed static analysis is limited and only concerned with local
+variables; however object and tuple fields are treated as separate
+entities:
+
+\begin{verbatim}
+proc consume(x: sink Obj) = discard "no implementation"
+
+proc main =
+  let tup = (Obj(), Obj())
+  consume tup[0]
+  # ok, only tup[0] was consumed, tup[1] is still alive:
+  echo tup[1]
+\end{verbatim}
+
+Sometimes it is required to explicitly \texttt{move} a value into its
+final position:
+
+\begin{verbatim}
+proc main =
+  var dest, src: array[10, string]
+  # ...
+  for i in 0..high(dest): dest[i] = move(src[i])
+\end{verbatim}
+
+An implementation is allowed, but not required to implement even more
+move optimizations (and the current implementation does not).
+
+\hypertarget{sink-parameter-inference}{%
+\subsection{Sink parameter inference}\label{sink-parameter-inference}}
+
+The current implementation can do a limited form of sink parameter
+inference. But it has to be enabled via {-\/-sinkInference:on}, either
+on the command line or via a {push} pragma.
+
+To enable it for a section of code, one can use {\{.push sinkInference:
+on.\}}...{\{.pop.\}}.
+
+The \texttt{.nosinks} pragma can be used to disable this inference for a
+single routine:
+
+\begin{verbatim}
+proc addX(x: T; child: T) {.nosinks.} =
+  x.s.add child
+\end{verbatim}
+
+The details of the inference algorithm are currently undocumented.
+
+\hypertarget{rewrite-rules}{%
+\subsection{Rewrite rules}\label{rewrite-rules}}
+
+\textbf{Note}: There are two different allowed implementation
+strategies:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  The produced \texttt{finally} section can be a single section that is
+  wrapped around the complete routine body.
+\item
+  The produced \texttt{finally} section is wrapped around the enclosing
+  scope.
+\end{enumerate}
+
+The current implementation follows strategy (2). This means that
+resources are destroyed at the scope exit.
+
+\begin{verbatim}
+var x: T; stmts
+---------------             (destroy-var)
+var x: T; try stmts
+finally: `=destroy`(x)
+
+
+g(f(...))
+------------------------    (nested-function-call)
+g(let tmp;
+bitwiseCopy tmp, f(...);
+tmp)
+finally: `=destroy`(tmp)
+
+
+x = f(...)
+------------------------    (function-sink)
+`=sink`(x, f(...))
+
+
+x = lastReadOf z
+------------------          (move-optimization)
+`=sink`(x, z)
+wasMoved(z)
+
+
+v = v
+------------------   (self-assignment-removal)
+discard "nop"
+
+
+x = y
+------------------          (copy)
+`=`(x, y)
+
+
+f_sink(g())
+-----------------------     (call-to-sink)
+f_sink(g())
+
+
+f_sink(notLastReadOf y)
+--------------------------     (copy-to-sink)
+(let tmp; `=`(tmp, y);
+f_sink(tmp))
+
+
+f_sink(lastReadOf y)
+-----------------------     (move-to-sink)
+f_sink(y)
+wasMoved(y)
+\end{verbatim}
+
+\hypertarget{object-and-array-construction}{%
+\subsection{Object and array
+construction}\label{object-and-array-construction}}
+
+Object and array construction is treated as a function call where the
+function has \texttt{sink} parameters.
+
+\hypertarget{destructor-removal}{%
+\subsection{Destructor removal}\label{destructor-removal}}
+
+\texttt{wasMoved(x);} followed by a {=destroy(x)} operation cancel each
+other out. An implementation is encouraged to exploit this in order to
+improve efficiency and code sizes. The current implementation does
+perform this optimization.
+
+\hypertarget{self-assignments}{%
+\subsection{Self assignments}\label{self-assignments}}
+
+\texttt{=sink} in combination with \texttt{wasMoved} can handle
+self-assignments but it's subtle.
+
+The simple case of \texttt{x\ =\ x} cannot be turned into
+\texttt{=sink(x,\ x);\ wasMoved(x)} because that would lose \texttt{x}'s
+value. The solution is that simple self-assignments are simply
+transformed into an empty statement that does nothing.
+
+The complex case looks like a variant of \texttt{x\ =\ f(x)}, we
+consider \texttt{x\ =\ select(rand()\ \textless{}\ 0.5,\ x,\ y)} here:
+
+\begin{verbatim}
+proc select(cond: bool; a, b: sink string): string =
+  if cond:
+    result = a # moves a into result
+  else:
+    result = b # moves b into result
+
+proc main =
+  var x = "abc"
+  var y = "xyz"
+  # possible self-assignment:
+  x = select(true, x, y)
+\end{verbatim}
+
+Is transformed into:
+
+\begin{verbatim}
+proc select(cond: bool; a, b: sink string): string =
+  try:
+    if cond:
+      `=sink`(result, a)
+      wasMoved(a)
+    else:
+      `=sink`(result, b)
+      wasMoved(b)
+  finally:
+    `=destroy`(b)
+    `=destroy`(a)
+
+proc main =
+  var
+    x: string
+    y: string
+  try:
+    `=sink`(x, "abc")
+    `=sink`(y, "xyz")
+    `=sink`(x, select(true,
+      let blitTmp = x
+      wasMoved(x)
+      blitTmp,
+      let blitTmp = y
+      wasMoved(y)
+      blitTmp))
+    echo [x]
+  finally:
+    `=destroy`(y)
+    `=destroy`(x)
+\end{verbatim}
+
+As can be manually verified, this transformation is correct for
+self-assignments.
+
+\hypertarget{lent-type}{%
+\subsection{Lent type}\label{lent-type}}
+
+\texttt{proc\ p(x:\ sink\ T)} means that the proc \texttt{p} takes
+ownership of \texttt{x}. To eliminate even more creation/copy
+\textless-\textgreater{} destruction pairs, a proc's return type can be
+annotated as \texttt{lent\ T}. This is useful for "getter" accessors
+that seek to allow an immutable view into a container.
+
+The \texttt{sink} and \texttt{lent} annotations allow us to remove most
+(if not all) superfluous copies and destructions.
+
+\texttt{lent\ T} is like \texttt{var\ T} a hidden pointer. It is proven
+by the compiler that the pointer does not outlive its origin. No
+destructor call is injected for expressions of type \texttt{lent\ T} or
+of type \texttt{var\ T}.
+
+\begin{verbatim}
+type
+  Tree = object
+    kids: seq[Tree]
+
+proc construct(kids: sink seq[Tree]): Tree =
+  result = Tree(kids: kids)
+  # converted into:
+  `=sink`(result.kids, kids); wasMoved(kids)
+  `=destroy`(kids)
+
+proc `[]`*(x: Tree; i: int): lent Tree =
+  result = x.kids[i]
+  # borrows from 'x', this is transformed into:
+  result = addr x.kids[i]
+  # This means 'lent' is like 'var T' a hidden pointer.
+  # Unlike 'var' this hidden pointer cannot be used to mutate the object.
+
+iterator children*(t: Tree): lent Tree =
+  for x in t.kids: yield x
+
+proc main =
+  # everything turned into moves:
+  let t = construct(@[construct(@[]), construct(@[])])
+  echo t[0] # accessor does not copy the element!
+\end{verbatim}
+
+\hypertarget{the-.cursor-annotation}{%
+\subsection{The .cursor annotation}\label{the-.cursor-annotation}}
+
+Under the \texttt{-\/-gc:arc\textbar{}orc} modes Nim's {ref} type is
+implemented via the same runtime "hooks" and thus via reference
+counting. This means that cyclic structures cannot be freed immediately
+(\texttt{-\/-gc:orc} ships with a cycle collector). With the
+\texttt{.cursor} annotation one can break up cycles declaratively:
+
+\begin{verbatim}
+type
+  Node = ref object
+    left: Node # owning ref
+    right {.cursor.}: Node # non-owning ref
+\end{verbatim}
+
+But please notice that this is not C++'s weak\_ptr, it means the right
+field is not involved in the reference counting, it is a raw pointer
+without runtime checks.
+
+Automatic reference counting also has the disadvantage that it
+introduces overhead when iterating over linked structures. The
+\texttt{.cursor} annotation can also be used to avoid this overhead:
+
+\begin{verbatim}
+var it {.cursor.} = listRoot
+while it != nil:
+  use(it)
+  it = it.next
+\end{verbatim}
+
+In fact, \texttt{.cursor} more generally prevents object
+construction/destruction pairs and so can also be useful in other
+contexts. The alternative solution would be to use raw pointers
+(\texttt{ptr}) instead which is more cumbersome and also more dangerous
+for Nim's evolution: Later on the compiler can try to prove
+\texttt{.cursor} annotations to be safe, but for \texttt{ptr} the
+compiler has to remain silent about possible problems.
+
+\hypertarget{cursor-inference-copy-elision}{%
+\subsection{Cursor inference / copy
+elision}\label{cursor-inference-copy-elision}}
+
+The current implementation also performs {.cursor} inference. Cursor
+inference is a form of copy elision.
+
+To see how and when we can do that, think about this question: In {dest
+= src} when do we really have to \emph{materialize} the full copy? -
+Only if {dest} or {src} are mutated afterwards. If {dest} is a local
+variable that is simple to analyse. And if {src} is a location derived
+from a formal parameter, we also know it is not mutated! In other words,
+we do a compile-time copy-on-write analysis.
+
+This means that "borrowed" views can be written naturally and without
+explicit pointer indirections:
+
+\begin{verbatim}
+proc main(tab: Table[string, string]) =
+  let v = tab["key"] # inferred as .cursor because 'tab' is not mutated.
+  # no copy into 'v', no destruction of 'v'.
+  use(v)
+  useItAgain(v)
+\end{verbatim}
+
+\hypertarget{hook-lifting}{%
+\subsection{Hook lifting}\label{hook-lifting}}
+
+The hooks of a tuple type \texttt{(A,\ B,\ ...)} are generated by
+lifting the hooks of the involved types \texttt{A}, \texttt{B}, ... to
+the tuple type. In other words, a copy \texttt{x\ =\ y} is implemented
+as \texttt{x{[}0{]}\ =\ y{[}0{]};\ x{[}1{]}\ =\ y{[}1{]};\ ...},
+likewise for \texttt{=sink} and \texttt{=destroy}.
+
+Other value-based compound types like \texttt{object} and \texttt{array}
+are handled correspondingly. For \texttt{object} however, the compiler
+generated hooks can be overridden. This can also be important to use an
+alternative traversal of the involved datastructure that is more
+efficient or in order to avoid deep recursions.
+
+\hypertarget{hook-generation}{%
+\subsection{Hook generation}\label{hook-generation}}
+
+The ability to override a hook leads to a phase ordering problem:
+
+\begin{verbatim}
+type
+  Foo[T] = object
+
+proc main =
+  var f: Foo[int]
+  # error: destructor for 'f' called here before
+  # it was seen in this module.
+
+proc `=destroy`[T](f: var Foo[T]) =
+  discard
+\end{verbatim}
+
+The solution is to define
+\texttt{proc\ \textasciigrave{}=destroy\textasciigrave{}{[}T{]}(f:\ var\ Foo{[}T{]})}
+before it is used. The compiler generates implicit hooks for all types
+in \emph{strategic places} so that an explicitly provided hook that
+comes too "late" can be detected reliably. These \emph{strategic places}
+have been derived from the rewrite rules and are as follows:
+
+\begin{itemize}
+\tightlist
+\item
+  In the construct \texttt{let/var\ x\ =\ ...} (var/let binding) hooks
+  are generated for \texttt{typeof(x)}.
+\item
+  In \texttt{x\ =\ ...} (assignment) hooks are generated for
+  \texttt{typeof(x)}.
+\item
+  In \texttt{f(...)} (function call) hooks are generated for
+  \texttt{typeof(f(...))}.
+\item
+  For every sink parameter \texttt{x:\ sink\ T} the hooks are generated
+  for \texttt{typeof(x)}.
+\end{itemize}
+
+\hypertarget{nodestroy-pragma}{%
+\subsection{nodestroy pragma}\label{nodestroy-pragma}}
+
+The experimental \texttt{nodestroy} pragma inhibits hook injections.
+This can be used to specialize the object traversal in order to avoid
+deep recursions:
+
+\begin{verbatim}
+type Node = ref object
+  x, y: int32
+  left, right: Node
+
+type Tree = object
+  root: Node
+
+proc `=destroy`(t: var Tree) {.nodestroy.} =
+  # use an explicit stack so that we do not get stack overflows:
+  var s: seq[Node] = @[t.root]
+  while s.len > 0:
+    let x = s.pop
+    if x.left != nil: s.add(x.left)
+    if x.right != nil: s.add(x.right)
+    # free the memory explicit:
+    dispose(x)
+  # notice how even the destructor for 's' is not called implicitly
+  # anymore thanks to .nodestroy, so we have to call it on our own:
+  `=destroy`(s)
+\end{verbatim}
+
+As can be seen from the example, this solution is hardly sufficient and
+should eventually be replaced by a better solution.

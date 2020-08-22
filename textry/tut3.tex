@@ -1,0 +1,342 @@
+\hypertarget{nim-tutorial-part-iii}{%
+\section{Nim Tutorial (Part III)}\label{nim-tutorial-part-iii}}
+
+\begin{description}
+\item[Author]
+Arne Döring
+\item[Version]
+1.3.5
+\end{description}
+
+\hypertarget{introduction}{%
+\subsection{Introduction}\label{introduction}}
+
+\begin{quote}
+"With Great Power Comes Great Responsibility." -\/- Spider Man's Uncle
+\end{quote}
+
+This document is a tutorial about Nim's macro system. A macro is a
+function that is executed at compile time and transforms a Nim syntax
+tree into a different tree.
+
+Examples of things that can be implemented in macros:
+
+\begin{itemize}
+\tightlist
+\item
+  An assert macro that prints both sides of a comparison operator, if
+  the assertion fails. \texttt{myAssert(a\ ==\ b)} is converted to
+  \texttt{if\ a\ !=\ b:\ quit(\$a\ "\ !=\ "\ \$b)}
+\item
+  A debug macro that prints the value and the name of the symbol.
+  \texttt{myDebugEcho(a)} is converted to \texttt{echo\ "a:\ ",\ a}
+\item
+  Symbolic differentiation of an expression.
+  \texttt{diff(a*pow(x,3)\ +\ b*pow(x,2)\ +\ c*x\ +\ d,\ x)} is
+  converted to \texttt{3*a*pow(x,2)\ +\ 2*b*x\ +\ c}
+\end{itemize}
+
+\hypertarget{macro-arguments}{%
+\subsubsection{Macro Arguments}\label{macro-arguments}}
+
+The types of macro arguments have two faces. One face is used for the
+overload resolution, and the other face is used within the macro body.
+For example, if \texttt{macro\ foo(arg:\ int)} is called in an
+expression \texttt{foo(x)}, \texttt{x} has to be of a type compatible to
+int, but \emph{within} the macro's body \texttt{arg} has the type
+\texttt{NimNode}, not \texttt{int}! Why it is done this way will become
+obvious later, when we have seen concrete examples.
+
+There are two ways to pass arguments to a macro, an argument can be
+either \texttt{typed} or \texttt{untyped}.
+
+\hypertarget{untyped-arguments}{%
+\subsubsection{Untyped Arguments}\label{untyped-arguments}}
+
+Untyped macro arguments are passed to the macro before they are
+semantically checked. This means the syntax tree that is passed down to
+the macro does not need to make sense for Nim yet, the only limitation
+is that it needs to be parsable. Usually the macro does not check the
+argument either but uses it in the transformation's result somehow. The
+result of a macro expansion is always checked by the compiler, so apart
+from weird error messages nothing bad can happen.
+
+The downside for an \texttt{untyped} argument is that these do not play
+well with Nim's overloading resolution.
+
+The upside for untyped arguments is that the syntax tree is quite
+predictable and less complex compared to its \texttt{typed} counterpart.
+
+\hypertarget{typed-arguments}{%
+\subsubsection{Typed Arguments}\label{typed-arguments}}
+
+For typed arguments, the semantic checker runs on the argument and does
+transformations on it, before it is passed to the macro. Here identifier
+nodes are resolved as symbols, implicit type conversions are visible in
+the tree as calls, templates are expanded and probably most importantly,
+nodes have type information. Typed arguments can have the type
+\texttt{typed} in the arguments list. But all other types, such as
+\texttt{int}, \texttt{float} or \texttt{MyObjectType} are typed
+arguments as well, and they are passed to the macro as a syntax tree.
+
+\hypertarget{static-arguments}{%
+\subsubsection{Static Arguments}\label{static-arguments}}
+
+Static arguments are a way to pass values as values and not as syntax
+tree nodes to a macro. For example for
+\texttt{macro\ foo(arg:\ static{[}int{]})} in the expression
+\texttt{foo(x)}, \texttt{x} needs to be an integer constant, but in the
+macro body \texttt{arg} is just like a normal parameter of type
+\texttt{int}.
+
+\begin{verbatim}
+import macros
+
+macro myMacro(arg: static[int]): untyped =
+  echo arg # just an int (7), not ``NimNode``
+
+myMacro(1 + 2 * 3)
+\end{verbatim}
+
+\hypertarget{code-blocks-as-arguments}{%
+\subsubsection{Code Blocks as
+Arguments}\label{code-blocks-as-arguments}}
+
+It is possible to pass the last argument of a call expression in a
+separate code block with indentation. For example the following code
+example is a valid (but not a recommended) way to call \texttt{echo}:
+
+\begin{verbatim}
+echo "Hello ":
+  let a = "Wor"
+  let b = "ld!"
+  a & b
+\end{verbatim}
+
+For macros this way of calling is very useful; syntax trees of arbitrary
+complexity can be passed to macros with this notation.
+
+\hypertarget{the-syntax-tree}{%
+\subsubsection{The Syntax Tree}\label{the-syntax-tree}}
+
+In order to build a Nim syntax tree one needs to know how Nim source
+code is represented as a syntax tree, and how such a tree needs to look
+like so that the Nim compiler will understand it. The nodes of the Nim
+syntax tree are documented in the \href{macros.html}{macros} module. But
+a more interactive way to explore the Nim syntax tree is with
+\texttt{macros.treeRepr}, it converts a syntax tree into a multi line
+string for printing on the console. It can be used to explore how the
+argument expressions are represented in tree form and for debug printing
+of generated syntax tree. \texttt{dumpTree} is a predefined macro that
+just prints its argument in tree representation, but does nothing else.
+Here is an example of such a tree representation:
+
+\begin{verbatim}
+dumpTree:
+  var mt: MyType = MyType(a:123.456, b:"abcdef")
+
+# output:
+#   StmtList
+#     VarSection
+#       IdentDefs
+#         Ident "mt"
+#         Ident "MyType"
+#         ObjConstr
+#           Ident "MyType"
+#           ExprColonExpr
+#             Ident "a"
+#             FloatLit 123.456
+#           ExprColonExpr
+#             Ident "b"
+#             StrLit "abcdef"
+\end{verbatim}
+
+Custom Semantic Checking
+-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-
+
+The first thing that a macro should do with its arguments is to check if
+the argument is in the correct form. Not every type of wrong input needs
+to be caught here, but anything that could cause a crash during macro
+evaluation should be caught and create a nice error message.
+\texttt{macros.expectKind} and \texttt{macros.expectLen} are a good
+start. If the checks need to be more complex, arbitrary error messages
+can be created with the \texttt{macros.error} proc.
+
+\begin{verbatim}
+macro myAssert(arg: untyped): untyped =
+  arg.expectKind nnkInfix
+\end{verbatim}
+
+\hypertarget{generating-code}{%
+\subsubsection{Generating Code}\label{generating-code}}
+
+There are two ways to generate the code. Either by creating the syntax
+tree with expressions that contain a lot of calls to \texttt{newTree}
+and \texttt{newLit}, or with \texttt{quote\ do:} expressions. The first
+option offers the best low level control for the syntax tree generation,
+but the second option is much less verbose. If you choose to create the
+syntax tree with calls to \texttt{newTree} and \texttt{newLit} the macro
+\texttt{macros.dumpAstGen} can help you with the verbosity.
+\texttt{quote\ do:} allows you to write the code that you want to
+generate literally, backticks are used to insert code from
+\texttt{NimNode} symbols into the generated expression. This means that
+you can't use backticks within \texttt{quote\ do:} for anything else
+than injecting symbols. Make sure to inject only symbols of type
+\texttt{NimNode} into the generated syntax tree. You can use
+\texttt{newLit} to convert arbitrary values into expressions trees of
+type \texttt{NimNode} so that it is safe to inject them into the tree.
+
+\begin{verbatim}
+import macros
+
+type
+  MyType = object
+    a: float
+    b: string
+
+macro myMacro(arg: untyped): untyped =
+  var mt: MyType = MyType(a:123.456, b:"abcdef")
+
+  # ...
+
+  let mtLit = newLit(mt)
+
+  result = quote do:
+    echo `arg`
+    echo `mtLit`
+
+myMacro("Hallo")
+\end{verbatim}
+
+The call to \texttt{myMacro} will generate the following code:
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{building-your-first-macro}{%
+\subsubsection{Building Your First
+Macro}\label{building-your-first-macro}}
+
+To give a starting point to writing macros we will show now how to
+implement the \texttt{myDebug} macro mentioned earlier. The first thing
+to do is to build a simple example of the macro usage, and then just
+print the argument. This way it is possible to get an idea of a correct
+argument should be look like.
+
+\begin{verbatim}
+import macros
+
+macro myAssert(arg: untyped): untyped =
+  echo arg.treeRepr
+
+let a = 1
+let b = 2
+
+myAssert(a != b)
+\end{verbatim}
+
+\begin{verbatim}
+Infix
+  Ident "!="
+  Ident "a"
+  Ident "b"
+\end{verbatim}
+
+From the output it is possible to see that the argument is an infix
+operator (node kind is "Infix"), as well as that the two operands are at
+index 1 and 2. With this information the actual macro can be written.
+
+\begin{verbatim}
+import macros
+
+macro myAssert(arg: untyped): untyped =
+  # all node kind identifiers are prefixed with "nnk"
+  arg.expectKind nnkInfix
+  arg.expectLen 3
+  # operator as string literal
+  let op  = newLit(" " & arg[0].repr & " ")
+  let lhs = arg[1]
+  let rhs = arg[2]
+
+  result = quote do:
+    if not `arg`:
+      raise newException(AssertionDefect,$`lhs` & `op` & $`rhs`)
+
+let a = 1
+let b = 2
+
+myAssert(a != b)
+myAssert(a == b)
+\end{verbatim}
+
+This is the code that will be generated. To debug what the macro
+actually generated, the statement \texttt{echo\ result.repr} can be
+used, in the last line of the macro. It is also the statement that has
+been used to get this output.
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{with-power-comes-responsibility}{%
+\subsubsection{With Power Comes
+Responsibility}\label{with-power-comes-responsibility}}
+
+Macros are very powerful. A good advice is to use them as little as
+possible, but as much as necessary. Macros can change the semantics of
+expressions, making the code incomprehensible for anybody who does not
+know exactly what the macro does with it. So whenever a macro is not
+necessary and the same logic can be implemented using templates or
+generics, it is probably better not to use a macro. And when a macro is
+used for something, the macro should better have a well written
+documentation. For all the people who claim to write only perfectly
+self-explanatory code: when it comes to macros, the implementation is
+not enough for documentation.
+
+\hypertarget{limitations}{%
+\subsubsection{Limitations}\label{limitations}}
+
+Since macros are evaluated in the compiler in the NimVM, macros share
+all the limitations of the NimVM. They have to be implemented in pure
+Nim code. Macros can start external processes on the shell, but they
+cannot call C functions except from those that are built in the
+compiler.
+
+\hypertarget{more-examples}{%
+\subsection{More Examples}\label{more-examples}}
+
+This tutorial can only cover the basics of the macro system. There are
+macros out there that could be an inspiration for you of what is
+possible with it.
+
+\hypertarget{strformat}{%
+\subsubsection{Strformat}\label{strformat}}
+
+In the Nim standard library, the \texttt{strformat} library provides a
+macro that parses a string literal at compile time. Parsing a string in
+a macro like here is generally not recommended. The parsed AST cannot
+have type information, and parsing implemented on the VM is generally
+not very fast. Working on AST nodes is almost always the recommended
+way. But still \texttt{strformat} is a good example for a practical use
+case for a macro that is slightly more complex than the \texttt{assert}
+macro.
+
+\href{https://github.com/nim-lang/Nim/blob/5845716df8c96157a047c2bd6bcdd795a7a2b9b1/lib/pure/strformat.nim\#L280}{Strformat}
+
+\hypertarget{ast-pattern-matching}{%
+\subsubsection{Ast Pattern Matching}\label{ast-pattern-matching}}
+
+Ast Pattern Matching is a macro library to aid in writing complex
+macros. This can be seen as a good example of how to repurpose the Nim
+syntax tree with new semantics.
+
+\href{https://github.com/krux02/ast-pattern-matching}{Ast Pattern
+Matching}
+
+\hypertarget{opengl-sandbox}{%
+\subsubsection{OpenGL Sandbox}\label{opengl-sandbox}}
+
+This project has a working Nim to GLSL compiler written entirely in
+macros. It scans recursively though all used function symbols to compile
+them so that cross library functions can be executed on the GPU.
+
+\href{https://github.com/krux02/opengl-sandbox}{OpenGL Sandbox}

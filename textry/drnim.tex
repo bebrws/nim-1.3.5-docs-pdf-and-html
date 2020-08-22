@@ -1,0 +1,212 @@
+\hypertarget{drnim-user-guide}{%
+\section{DrNim User Guide}\label{drnim-user-guide}}
+
+\begin{description}
+\item[Author]
+Andreas Rumpf
+\item[Version]
+1.3.5
+\end{description}
+
+\hypertarget{introduction}{%
+\subsection{Introduction}\label{introduction}}
+
+This document describes the usage of the \emph{DrNim} tool. DrNim
+combines the Nim frontend with the
+\href{https://github.com/Z3Prover/z3}{Z3} proof engine in order to allow
+verify / validate software written in Nim. DrNim's command line options
+are the same as the Nim compiler's.
+
+DrNim currently only checks the sections of your code that are marked
+via \texttt{staticBoundChecks:\ on}:
+
+\begin{verbatim}
+{.push staticBoundChecks: on.}
+# <--- code section here ---->
+{.pop.}
+\end{verbatim}
+
+DrNim currently only tries to prove array indexing or subrange checks,
+overflow errors are \emph{not} prevented. Overflows will be checked for
+in the future.
+
+Later versions of the \textbf{Nim compiler} will \textbf{assume} that
+the checks inside the \texttt{staticBoundChecks:\ on} environment have
+been proven correct and so it will \textbf{omit} the runtime checks. If
+you do not want this behavior, use instead
+\texttt{\{.push\ staticBoundChecks:\ defined(nimDrNim).\}}. This way the
+Nim compiler remains unaware of the performed proofs but DrNim will
+prove your code.
+
+\hypertarget{installation}{%
+\subsection{Installation}\label{installation}}
+
+Run \texttt{koch\ drnim}, the executable will afterwards be in
+\texttt{\$nim/bin/drnim}.
+
+\hypertarget{motivating-example}{%
+\subsection{Motivating Example}\label{motivating-example}}
+
+The follow example highlights what DrNim can easily do, even without
+additional annotations:
+
+\begin{verbatim}
+{.push staticBoundChecks: on.}
+
+proc sum(a: openArray[int]): int =
+  for i in 0..a.len:
+    result += a[i]
+
+{.pop.}
+
+echo sum([1, 2, 3])
+\end{verbatim}
+
+This program contains a famous "index out of bounds" bug. DrNim detects
+it and produces the following error message:
+
+\begin{verbatim}
+cannot prove: i <= len(a) + -1; counter example: i -> 0 a.len -> 0 [IndexCheck]
+\end{verbatim}
+
+In other words for \texttt{i\ ==\ 0} and \texttt{a.len\ ==\ 0} (for
+example!) there would be an index out of bounds error.
+
+\hypertarget{pre--postconditions-and-invariants}{%
+\subsection{Pre-, postconditions and
+invariants}\label{pre--postconditions-and-invariants}}
+
+DrNim adds 4 additional annotations (pragmas) to Nim:
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{requires}
+\item
+  \texttt{ensures}
+\item
+  \texttt{invariant}
+\item
+  \texttt{assume}
+\end{itemize}
+
+These pragmas are ignored by the Nim compiler so that they don't have to
+be disabled via \texttt{when\ defined(nimDrNim)}.
+
+\hypertarget{invariant}{%
+\subsubsection{Invariant}\label{invariant}}
+
+An \texttt{invariant} is a proposition that must be true after every
+loop iteration, it's tied to the loop body it's part of.
+
+\hypertarget{requires}{%
+\subsubsection{Requires}\label{requires}}
+
+A \texttt{requires} annotation describes what the function expects to be
+true before it's called so that it can perform its operation. A
+\texttt{requires} annotation is also called a \texttt{precondition}.
+
+\hypertarget{ensures}{%
+\subsubsection{Ensures}\label{ensures}}
+
+An \texttt{ensures} annotation describes what will be true after the
+function call. An \texttt{ensures} annotation is also called a
+\texttt{postcondition}.
+
+\hypertarget{assume}{%
+\subsubsection{Assume}\label{assume}}
+
+An \texttt{assume} annotation describes what DrNim should
+\textbf{assume} to be true in this section of the program. It is an
+unsafe escape mechanism comparable to Nim's \texttt{cast} statement. Use
+it only when you really know better than DrNim. You should add a comment
+to a paper that proves the proposition you assume.
+
+\hypertarget{example-insertionsort}{%
+\subsection{Example: insertionSort}\label{example-insertionsort}}
+
+\textbf{Note}: This example does not yet work with DrNim.
+
+\begin{verbatim}
+import std / logic
+
+proc insertionSort(a: var openArray[int]) {.
+    ensures: forall(i in 1..<a.len, a[i-1] <= a[i]).} =
+
+  for k in 1 ..< a.len:
+    {.invariant: 1 <= k and k <= a.len.}
+    {.invariant: forall(j in 1..<k, i in 0..<j, a[i] <= a[j]).}
+    var t = k
+    while t > 0 and a[t-1] > a[t]:
+      {.invariant: k < a.len.}
+      {.invariant: 0 <= t and t <= k.}
+      {.invariant: forall(j in 1..k, i in 0..<j, j == t or a[i] <= a[j]).}
+      swap a[t], a[t-1]
+      dec t
+\end{verbatim}
+
+Unfortunately the invariants required to prove this code correct take
+more code than the imperative instructions. However this effort can be
+compensated by the fact that the result needs very little testing. Be
+aware though that DrNim only proves that after \texttt{insertionSort}
+this condition holds:
+
+\begin{verbatim}
+forall(i in 1..<a.len, a[i-1] <= a[i])
+\end{verbatim}
+
+This is required, but not sufficient to describe that a \texttt{sort}
+operation was performed. For example, the same postcondition is true for
+this proc which doesn't sort at all:
+
+\begin{verbatim}
+import std / logic
+
+proc insertionSort(a: var openArray[int]) {.
+    ensures: forall(i in 1..<a.len, a[i-1] <= a[i]).} =
+  # does not sort, overwrites `a`'s contents!
+  for i in 0..<a.len: a[i] = i
+\end{verbatim}
+
+\hypertarget{syntax-of-propositions}{%
+\subsection{Syntax of propositions}\label{syntax-of-propositions}}
+
+The basic syntax is
+\texttt{ensures\textbar{}requires\textbar{}invariant:\ \textless{}prop\textgreater{}}.
+A \texttt{prop} is either a comparison or a compound:
+
+\begin{verbatim}
+prop = nim_bool_expression
+     | prop 'and' prop
+     | prop 'or' prop
+     | prop '->' prop # implication
+     | prop '<->' prop
+     | 'not' prop
+     | '(' prop ')' # you can group props via ()
+     | forallProp
+     | existsProp
+
+forallProp = 'forall' '(' quantifierList ',' prop ')'
+existsProp = 'exists' '(' quantifierList ',' prop ')'
+
+quantifierList = quantifier (',' quantifier)*
+quantifier = <new identifier> 'in' nim_iteration_expression
+\end{verbatim}
+
+\texttt{nim\_iteration\_expression} here is an ordinary expression of
+Nim code that describes an iteration space, for example \texttt{1..4} or
+\texttt{1..\textless{}a.len}.
+
+\texttt{nim\_bool\_expression} here is an ordinary expression of Nim
+code of type \texttt{bool} like \texttt{a\ ==\ 3} or
+\texttt{23\ \textgreater{}\ a.len}.
+
+The supported subset of Nim code that can be used in these expressions
+is currently underspecified but \texttt{let} variables, function
+parameters and \texttt{result} (which represents the function's final
+result) are amenable for verification. The expressions must not have any
+side-effects and must terminate.
+
+The operators \texttt{forall}, \texttt{exists},
+\texttt{-\textgreater{}}, \texttt{\textless{}-\textgreater{}} have to
+imported from \texttt{std\ /\ logic}.

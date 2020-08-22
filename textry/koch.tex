@@ -1,0 +1,79 @@
+\hypertarget{nim-maintenance-script}{%
+\section{Nim maintenance script}\label{nim-maintenance-script}}
+
+\begin{description}
+\item[Version]
+1.3.5
+\end{description}
+
+\hypertarget{introduction}{%
+\subsection{Introduction}\label{introduction}}
+
+The \texttt{koch} program is Nim's maintenance script. It is a
+replacement for make and shell scripting with the advantage that it is
+much more portable. The word \emph{koch} means \emph{cook} in German.
+\texttt{koch} is used mainly to build the Nim compiler, but it can also
+be used for other tasks. This document describes the supported commands
+and their options.
+
+\hypertarget{commands}{%
+\subsection{Commands}\label{commands}}
+
+\hypertarget{boot-command}{%
+\subsubsection{boot command}\label{boot-command}}
+
+The \texttt{boot} command bootstraps the compiler, and it accepts
+different options:
+
+\begin{description}
+\item[-d:release]
+By default a debug version is created, passing this option will force a
+release build, which is much faster and should be preferred unless you
+are debugging the compiler.
+\item[-d:nimUseLinenoise]
+Use the linenoise library for interactive mode (not needed on Windows).
+\end{description}
+
+After compilation is finished you will hopefully end up with the nim
+compiler in the \texttt{bin} directory. You can add Nim's \texttt{bin}
+directory to your \texttt{\$PATH} or use the install command to place it
+where it will be found.
+
+\hypertarget{csource-command}{%
+\subsubsection{csource command}\label{csource-command}}
+
+The \texttt{csource} command builds the C sources for installation. It
+accepts the same options as you would pass to the
+\protect\hyperlink{commands-boot-command}{boot command}.
+
+\hypertarget{temp-command}{%
+\subsubsection{temp command}\label{temp-command}}
+
+The temp command builds the Nim compiler but with a different final name
+(\texttt{nim\_temp}), so it doesn't overwrite your normal compiler. You
+can use this command to test different options, the same you would issue
+for the \protect\hyperlink{commands-boot-command}{boot command}.
+
+\hypertarget{test-command}{%
+\subsubsection{test command}\label{test-command}}
+
+The \texttt{test} command can also be invoked with the alias
+\texttt{tests}. This command will compile and run
+\texttt{testament/tester.nim}, which is the main driver of Nim's test
+suite. You can pass options to the \texttt{test} command, they will be
+forwarded to the tester. See its source code for available options.
+
+\hypertarget{web-command}{%
+\subsubsection{web command}\label{web-command}}
+
+The \texttt{web} command converts the documentation in the \texttt{doc}
+directory from rst to HTML. It also repeats the same operation but
+places the result in the \texttt{web/upload} which can be used to update
+the website at \url{https://nim-lang.org}.
+
+By default the documentation will be built in parallel using the number
+of available CPU cores. If any documentation build sub commands fail,
+they will be rerun in serial fashion so that meaningful error output can
+be gathered for inspection. The \texttt{-\/-parallelBuild:n} switch or
+configuration option can be used to force a specific number of parallel
+jobs or run everything serially from the start (\texttt{n\ ==\ 1}).

@@ -1,0 +1,204 @@
+\hypertarget{niminst-users-manual}{%
+\section{niminst User's manual}\label{niminst-users-manual}}
+
+\begin{description}
+\item[Author]
+Andreas Rumpf
+\item[Version]
+1.3.5
+\end{description}
+
+\hypertarget{introduction}{%
+\subsection{Introduction}\label{introduction}}
+
+niminst is a tool to generate an installer for a Nim program. Currently
+it can create an installer for Windows via
+\href{http://www.jrsoftware.org/isinfo.php}{Inno Setup} as well as
+installation/deinstallation scripts for UNIX. Later versions will
+support Linux' package management systems.
+
+niminst works by reading a configuration file that contains all the
+information that it needs to generate an installer for the different
+operating systems.
+
+\hypertarget{configuration-file}{%
+\subsection{Configuration file}\label{configuration-file}}
+
+niminst uses the Nim \href{parsecfg.html}{parsecfg} module to parse the
+configuration file. Here's an example of how the syntax looks like:
+
+The value of a key-value pair can reference user-defined variables via
+the \texttt{\$variable} notation: They can be defined in the command
+line with the \texttt{-\/-var:name=value} switch. This is useful to not
+hard-coding the program's version number into the configuration file,
+for instance.
+
+It follows a description of each possible section and how it affects the
+generated installers.
+
+\hypertarget{project-section}{%
+\subsubsection{Project section}\label{project-section}}
+
+The project section gathers general information about your project. It
+must contain the following key-value pairs:
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+Key & description\tabularnewline
+\midrule
+\endhead
+\texttt{Name} & the project's name; this needs to be a single
+word\tabularnewline
+\texttt{DisplayName} & the project's long name; this can contain spaces.
+If not specified, this is the same as \texttt{Name}.\tabularnewline
+\texttt{Version} & the project's version\tabularnewline
+\texttt{OS} & the OSes to generate C code for; for example:
+\texttt{"windows;linux;macosx"}\tabularnewline
+\texttt{CPU} & the CPUs to generate C code for; for example:
+\texttt{"i386;amd64;powerpc"}\tabularnewline
+\texttt{Authors} & the project's authors\tabularnewline
+\texttt{Description} & the project's description\tabularnewline
+\texttt{App} & the application's type: "Console" or "GUI". If "Console",
+niminst generates a special batch file for Windows to open up the
+command line shell.\tabularnewline
+\texttt{License} & the filename of the application's
+license\tabularnewline
+\bottomrule
+\end{longtable}
+
+\hypertarget{files-key}{%
+\subsubsection{\texorpdfstring{\texttt{files}
+key}{files key}}\label{files-key}}
+
+Many sections support the \texttt{files} key. Listed filenames can be
+separated by semicolon or the \texttt{files} key can be repeated.
+Wildcards in filenames are supported. If it is a directory name, all
+files in the directory are used:
+
+\begin{verbatim}
+[Config]
+Files: "configDir"
+Files: "otherconfig/*.conf;otherconfig/*.cfg"
+\end{verbatim}
+
+\hypertarget{config-section}{%
+\subsubsection{Config section}\label{config-section}}
+
+The \texttt{config} section currently only supports the \texttt{files}
+key. Listed files will be installed into the OS's configuration
+directory.
+
+\hypertarget{documentation-section}{%
+\subsubsection{Documentation section}\label{documentation-section}}
+
+The \texttt{documentation} section supports the \texttt{files} key.
+Listed files will be installed into the OS's native documentation
+directory (which might be \texttt{\$appdir/doc}).
+
+There is a \texttt{start} key which determines whether the Windows
+installer generates a link to e.g. the \texttt{index.html} of your
+documentation.
+
+\hypertarget{other-section}{%
+\subsubsection{Other section}\label{other-section}}
+
+The \texttt{other} section currently only supports the \texttt{files}
+key. Listed files will be installed into the application installation
+directory (\texttt{\$appdir}).
+
+\hypertarget{lib-section}{%
+\subsubsection{Lib section}\label{lib-section}}
+
+The \texttt{lib} section currently only supports the \texttt{files} key.
+Listed files will be installed into the OS's native library directory
+(which might be \texttt{\$appdir/lib}).
+
+\hypertarget{windows-section}{%
+\subsubsection{Windows section}\label{windows-section}}
+
+The \texttt{windows} section supports the \texttt{files} key for Windows
+specific files. Listed files will be installed into the application
+installation directory (\texttt{\$appdir}).
+
+Other possible options are:
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+Key & description\tabularnewline
+\midrule
+\endhead
+\texttt{BinPath} & paths to add to the Windows \texttt{\%PATH\%}
+environment variable. Example:
+\texttt{BinPath:\ r"bin;dist\textbackslash{}mingw\textbackslash{}bin"}\tabularnewline
+\texttt{InnoSetup} & boolean flag whether an Inno Setup installer should
+be generated for Windows. Example:
+\texttt{InnoSetup:\ "Yes"}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\hypertarget{unixbin-section}{%
+\subsubsection{UnixBin section}\label{unixbin-section}}
+
+The \texttt{UnixBin} section currently only supports the \texttt{files}
+key. Listed files will be installed into the OS's native bin directory
+(e.g. \texttt{/usr/local/bin}). The exact location depends on the
+installation path the user specifies when running the
+\texttt{install.sh} script.
+
+\hypertarget{unix-section}{%
+\subsubsection{Unix section}\label{unix-section}}
+
+Possible options are:
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+Key & description\tabularnewline
+\midrule
+\endhead
+\texttt{InstallScript} & boolean flag whether an installation shell
+script should be generated. Example:
+\texttt{InstallScript:\ "Yes"}\tabularnewline
+\texttt{UninstallScript} & boolean flag whether a deinstallation shell
+script should be generated. Example:
+\texttt{UninstallScript:\ "Yes"}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\hypertarget{innosetup-section}{%
+\subsubsection{InnoSetup section}\label{innosetup-section}}
+
+Possible options are:
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+Key & description\tabularnewline
+\midrule
+\endhead
+\texttt{path} & Path to Inno Setup. Example:
+\texttt{path\ =\ r"c:\textbackslash{}inno\ setup\ 5\textbackslash{}iscc.exe"}\tabularnewline
+\texttt{flags} & Flags to pass to Inno Setup. Example:
+\texttt{flags\ =\ "/Q"}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\hypertarget{c_compiler-section}{%
+\subsubsection{C\_Compiler section}\label{c_compiler-section}}
+
+Possible options are:
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+Key & description\tabularnewline
+\midrule
+\endhead
+\texttt{path} & Path to the C compiler.\tabularnewline
+\texttt{flags} & Flags to pass to the C Compiler. Example:
+\texttt{flags\ =\ "-w"}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\hypertarget{real-world-example}{%
+\subsection{Real world example}\label{real-world-example}}
+
+The installers for the Nim compiler itself are generated by niminst.
+Have a look at its configuration file:

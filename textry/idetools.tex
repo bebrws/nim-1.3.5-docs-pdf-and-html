@@ -1,0 +1,536 @@
+\hypertarget{nim-ide-integration-guide}{%
+\section{Nim IDE Integration Guide}\label{nim-ide-integration-guide}}
+
+\begin{description}
+\item[Author]
+Britney Spears
+\item[Version]
+1.3.5
+\end{description}
+
+Note: this is mostly outdated, see instead
+\href{nimsuggest.html}{nimsuggest}
+
+Nim differs from many other compilers in that it is really fast, and
+being so fast makes it suited to provide external queries for text
+editors about the source code being written. Through the
+\texttt{idetools} command of \href{nimc.html}{the compiler}, any IDE can
+query a \texttt{.nim} source file and obtain useful information like
+definition of symbols or suggestions for completion.
+
+This document will guide you through the available options. If you want
+to look at practical examples of idetools support you can look at the
+test files found in the \protect\hyperlink{test-suite}{Test suite} or
+\href{https://github.com/Araq/Nim/wiki/Editor-Support}{various editor
+integrations} already available.
+
+\hypertarget{idetools-invocation}{%
+\subsection{Idetools invocation}\label{idetools-invocation}}
+
+\hypertarget{specifying-the-location-of-the-query}{%
+\subsubsection{Specifying the location of the
+query}\label{specifying-the-location-of-the-query}}
+
+All of the available idetools commands require you to specify a query
+location through the \texttt{-\/-track} or \texttt{-\/-trackDirty}
+switches. The general idetools invocations are:
+
+\begin{verbatim}
+nim idetools --track:FILE,LINE,COL <switches> proj.nim
+\end{verbatim}
+
+Or:
+
+\begin{verbatim}
+nim idetools --trackDirty:DIRTY_FILE,FILE,LINE,COL <switches> proj.nim
+\end{verbatim}
+
+\begin{description}
+\item[\texttt{proj.nim}]
+This is the main \emph{project} filename. Most of the time you will pass
+in the same as \textbf{FILE}, but for bigger projects this is the file
+which is used as main entry point for the program, the one which users
+compile to generate a final binary.
+\item[\texttt{\textless{}switches\textgreater{}}]
+This would be any of the other idetools available options, like
+\texttt{-\/-def} or \texttt{-\/-suggest} explained in the following
+sections.
+\item[\texttt{COL}]
+An integer with the column you are going to query. For the compiler
+columns start at zero, so the first column will be \textbf{0} and the
+last in an 80 column terminal will be \textbf{79}.
+\item[\texttt{LINE}]
+An integer with the line you are going to query. For the compiler lines
+start at \textbf{1}.
+\item[\texttt{FILE}]
+The file you want to perform the query on. Usually you will pass in the
+same value as \textbf{proj.nim}.
+\item[\texttt{DIRTY\_FILE}]
+The \textbf{FILE} parameter is enough for static analysis, but IDEs tend
+to have \emph{unsaved buffers} where the user may still be in the middle
+of typing a line. In such situations the IDE can save the current
+contents to a temporary file and then use the \texttt{-\/-trackDirty}
+switch.
+
+Dirty files are likely to contain errors and they are usually compiled
+partially only to the point needed to service the idetool request. The
+compiler discriminates them to ensure that \textbf{a)} they won't be
+cached and \textbf{b)} they won't invalidate the cached contents of the
+original module.
+
+The other reason is that the dirty file can appear anywhere on disk
+(e.g. in tmpfs), but it must be treated as having a path matching the
+original module when it comes to usage of relative paths, etc. Queries,
+however, will refer to the dirty module name in their answers instead of
+the normal filename.
+\end{description}
+
+\hypertarget{definitions}{%
+\subsubsection{Definitions}\label{definitions}}
+
+The \texttt{-\/-def} idetools switch performs a query about the
+definition of a specific symbol. If available, idetools will answer with
+the type, source file, line/column information and other accessory data
+if available like a docstring. With this information an IDE can provide
+the typical \emph{Jump to definition} where a user puts the cursor on a
+symbol or uses the mouse to select it and is redirected to the place
+where the symbol is located.
+
+Since Nim is implemented in Nim, one of the nice things of this feature
+is that any user with an IDE supporting it can quickly jump around the
+standard library implementation and see exactly what a proc does,
+learning about the language and seeing real life examples of how to
+write/implement specific features.
+
+Idetools will always answer with a single definition or none if it can't
+find any valid symbol matching the position of the query.
+
+\hypertarget{suggestions}{%
+\subsubsection{Suggestions}\label{suggestions}}
+
+The \texttt{-\/-suggest} idetools switch performs a query about possible
+completion symbols at some point in the file. IDEs can easily provide an
+autocompletion feature where the IDE scans the current file (and related
+ones, if it knows about the language being edited and follows
+includes/imports) and when the user starts typing something a completion
+box with different options appears.
+
+However such features are not context sensitive and work simply on
+string matching, which can be problematic in Nim especially due to the
+case insensitiveness of the language (plus underscores as separators!).
+
+The typical usage scenario for this option is to call it after the user
+has typed the dot character for
+\href{tut2.html\#object-oriented-programming-method-call-syntax}{the
+object oriented call syntax}. Idetools will try to return the
+suggestions sorted first by scope (from innermost to outermost) and then
+by item name.
+
+\hypertarget{invocation-context}{%
+\subsubsection{Invocation context}\label{invocation-context}}
+
+The \texttt{-\/-context} idetools switch is very similar to the
+suggestions switch, but instead of being used after the user has typed a
+dot character, this one is meant to be used after the user has typed an
+opening brace to start typing parameters.
+
+\hypertarget{symbol-usages}{%
+\subsubsection{Symbol usages}\label{symbol-usages}}
+
+The \texttt{-\/-usages} idetools switch lists all usages of the symbol
+at a position. IDEs can use this to find all the places in the file
+where the symbol is used and offer the user to rename it in all places
+at the same time. Again, a pure string based search and replace may
+catch symbols out of the scope of a function/loop.
+
+For this kind of query the IDE will most likely ignore all the
+type/signature info provided by idetools and concentrate on the
+filename, line and column position of the multiple returned answers.
+
+\hypertarget{expression-evaluation}{%
+\subsubsection{Expression evaluation}\label{expression-evaluation}}
+
+This feature is still under development. In the future it will allow an
+IDE to evaluate an expression in the context of the currently
+running/debugged user project.
+
+\hypertarget{compiler-as-a-service-caas}{%
+\subsection{Compiler as a service
+(CAAS)}\label{compiler-as-a-service-caas}}
+
+The occasional use of idetools is acceptable for things like
+definitions, where the user puts the cursor on a symbol or double clicks
+it and after a second or two the IDE displays where that symbol is
+defined. Such latencies would be terrible for features like symbol
+suggestion, plus why wait at all if we can avoid it?
+
+The idetools command can be run as a compiler service (CAAS), where you
+first launch the compiler and it will stay online as a server, accepting
+queries in a telnet like fashion. The advantage of staying on is that
+for many queries the compiler can cache the results of the compilation,
+and subsequent queries should be fast in the millisecond range, thus
+being responsive enough for IDEs.
+
+If you want to start the server using stdin/stdout as communication you
+need to type:
+
+\begin{verbatim}
+nim serve --server.type:stdin proj.nim
+\end{verbatim}
+
+If you want to start the server using tcp and a port, you need to type:
+
+\begin{verbatim}
+nim serve --server.type:tcp --server.port:6000 \
+  --server.address:hostname proj.nim
+\end{verbatim}
+
+In both cases the server will start up and await further commands. The
+syntax of the commands you can now send to the server is practically the
+same as running the nim compiler on the commandline, you only need to
+remove the name of the compiler since you are already talking to it. The
+server will answer with as many lines of text it thinks necessary plus
+an empty line to indicate the end of the answer.
+
+You can find examples of client/server communication in the idetools
+tests found in the \protect\hyperlink{test-suite}{Test suite}.
+
+\hypertarget{parsing-idetools-output}{%
+\subsection{Parsing idetools output}\label{parsing-idetools-output}}
+
+Idetools outputs is always returned on single lines separated by tab
+characters (\texttt{\textbackslash{}t}). The values of each column are:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Three characters indicating the type of returned answer (e.g. def for
+  definition, \texttt{sug} for suggestion, etc).
+\item
+  Type of the symbol. This can be \texttt{skProc}, \texttt{skLet}, and
+  just about any of the enums defined in the module
+  \texttt{compiler/ast.nim}.
+\item
+  Full qualified path of the symbol. If you are querying a symbol
+  defined in the \texttt{proj.nim} file, this would have the form
+  \texttt{proj.symbolName}.
+\item
+  Type/signature. For variables and enums this will contain the type of
+  the symbol, for procs, methods and templates this will contain the
+  full unique signature (e.g. \texttt{proc\ (File)}).
+\item
+  Full path to the file containing the symbol.
+\item
+  Line where the symbol is located in the file. Lines start to count at
+  \textbf{1}.
+\item
+  Column where the symbol is located in the file. Columns start to count
+  at \textbf{0}.
+\item
+  Docstring for the symbol if available or the empty string. To
+  differentiate the docstring from end of answer in server mode, the
+  docstring is always provided enclosed in double quotes, and if the
+  docstring spans multiple lines, all following lines of the docstring
+  will start with a blank space to align visually with the starting
+  quote.
+
+  Also, you won't find raw \texttt{\textbackslash{}n} characters
+  breaking the one answer per line format. Instead you will need to
+  parse sequences in the form \texttt{\textbackslash{}xHH}, where
+  \emph{HH} is a hexadecimal value (e.g. newlines generate the sequence
+  \texttt{\textbackslash{}x0A}).
+\end{enumerate}
+
+The following sections define the expected output for each kind of
+symbol for which idetools returns valid output.
+
+\hypertarget{skconst}{%
+\subsubsection{skConst}\label{skconst}}
+
+\textbf{Third column}: module + {[}n scope nesting{]} + const name.\\
+\textbf{Fourth column}: the type of the const value.\\
+\textbf{Docstring}: always the empty string.
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{skenumfield}{%
+\subsubsection{skEnumField}\label{skenumfield}}
+
+\textbf{Third column}: module + {[}n scope nesting{]} + enum type + enum
+field name.\\
+\textbf{Fourth column}: enum type grouping other enum fields.\\
+\textbf{Docstring}: always the empty string.
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{skforvar}{%
+\subsubsection{skForVar}\label{skforvar}}
+
+\textbf{Third column}: module + {[}n scope nesting{]} + var name.\\
+\textbf{Fourth column}: type of the var.\\
+\textbf{Docstring}: always the empty string.
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{skiterator-skclosureiterator}{%
+\subsubsection{skIterator,
+skClosureIterator}\label{skiterator-skclosureiterator}}
+
+The fourth column will be the empty string if the iterator is being
+defined, since at that point in the file the parser hasn't processed the
+full line yet. The signature will be returned complete in posterior
+instances of the iterator.
+
+\textbf{Third column}: module + {[}n scope nesting{]} + iterator name.\\
+\textbf{Fourth column}: signature of the iterator including return
+type.\\
+\textbf{Docstring}: docstring if available.
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{sklabel}{%
+\subsubsection{skLabel}\label{sklabel}}
+
+\textbf{Third column}: module + {[}n scope nesting{]} + name.\\
+\textbf{Fourth column}: always the empty string.\\
+\textbf{Docstring}: always the empty string.
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{sklet}{%
+\subsubsection{skLet}\label{sklet}}
+
+\textbf{Third column}: module + {[}n scope nesting{]} + let name.\\
+\textbf{Fourth column}: the type of the let variable.\\
+\textbf{Docstring}: always the empty string.
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{skmacro}{%
+\subsubsection{skMacro}\label{skmacro}}
+
+The fourth column will be the empty string if the macro is being
+defined, since at that point in the file the parser hasn't processed the
+full line yet. The signature will be returned complete in posterior
+instances of the macro.
+
+\textbf{Third column}: module + {[}n scope nesting{]} + macro name.\\
+\textbf{Fourth column}: signature of the macro including return type.\\
+\textbf{Docstring}: docstring if available.
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{skmethod}{%
+\subsubsection{skMethod}\label{skmethod}}
+
+The fourth column will be the empty string if the method is being
+defined, since at that point in the file the parser hasn't processed the
+full line yet. The signature will be returned complete in posterior
+instances of the method.
+
+Methods imply
+\href{tut2.html\#object-oriented-programming-dynamic-dispatch}{dynamic
+dispatch} and idetools performs a static analysis on the code. For this
+reason idetools may not return the definition of the correct method you
+are querying because it may be impossible to know until the code is
+executed. It will try to return the method which covers the most
+possible cases (i.e. for variations of different classes in a hierarchy
+it will prefer methods using the base class).
+
+While at the language level a method is differentiated from others by
+the parameters and return value, the signature of the method returned by
+idetools returns also the pragmas for the method.
+
+Note that at the moment the word \texttt{proc} is returned for the
+signature of the found method instead of the expected \texttt{method}.
+This may change in the future.
+
+\textbf{Third column}: module + {[}n scope nesting{]} + method name.\\
+\textbf{Fourth column}: signature of the method including return type.\\
+\textbf{Docstring}: docstring if available.
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{skparam}{%
+\subsubsection{skParam}\label{skparam}}
+
+\textbf{Third column}: module + {[}n scope nesting{]} + param name.\\
+\textbf{Fourth column}: the type of the parameter.\\
+\textbf{Docstring}: always the empty string.
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{skproc}{%
+\subsubsection{skProc}\label{skproc}}
+
+The fourth column will be the empty string if the proc is being defined,
+since at that point in the file the parser hasn't processed the full
+line yet. The signature will be returned complete in posterior instances
+of the proc.
+
+While at the language level a proc is differentiated from others by the
+parameters and return value, the signature of the proc returned by
+idetools returns also the pragmas for the proc.
+
+\textbf{Third column}: module + {[}n scope nesting{]} + proc name.\\
+\textbf{Fourth column}: signature of the proc including return type.\\
+\textbf{Docstring}: docstring if available.
+
+\begin{verbatim}
+Default mode is readonly. Returns true iff the file could be opened.
+This throws no exception if the file could not be opened."
+\end{verbatim}
+
+\hypertarget{skresult}{%
+\subsubsection{skResult}\label{skresult}}
+
+\textbf{Third column}: module + {[}n scope nesting{]} + result.\\
+\textbf{Fourth column}: the type of the result.\\
+\textbf{Docstring}: always the empty string.
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{sktemplate}{%
+\subsubsection{skTemplate}\label{sktemplate}}
+
+The fourth column will be the empty string if the template is being
+defined, since at that point in the file the parser hasn't processed the
+full line yet. The signature will be returned complete in posterior
+instances of the template.
+
+\textbf{Third column}: module + {[}n scope nesting{]} + template name.\\
+\textbf{Fourth column}: signature of the template including return
+type.\\
+\textbf{Docstring}: docstring if available.
+
+\begin{verbatim}
+Example:
+
+.. code-block:: nim
+  let
+    numeric = @[1, 2, 3, 4, 5, 6, 7, 8, 9]
+    odd_numbers = toSeq(filter(numeric) do (x: int) -> bool:
+      if x mod 2 == 1:
+        result = true)
+  assert odd_numbers == @[1, 3, 5, 7, 9]"
+\end{verbatim}
+
+\hypertarget{sktype}{%
+\subsubsection{skType}\label{sktype}}
+
+\textbf{Third column}: module + {[}n scope nesting{]} + type name.\\
+\textbf{Fourth column}: the type.\\
+\textbf{Docstring}: always the empty string.
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{skvar}{%
+\subsubsection{skVar}\label{skvar}}
+
+\textbf{Third column}: module + {[}n scope nesting{]} + var name.\\
+\textbf{Fourth column}: the type of the var.\\
+\textbf{Docstring}: always the empty string.
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{test-suite}{%
+\subsection{Test suite}\label{test-suite}}
+
+To verify that idetools is working properly there are files in the
+\texttt{tests/caas/} directory which provide unit testing. If you find
+odd idetools behaviour and are able to reproduce it, you are welcome to
+report it as a bug and add a test to the suite to avoid future
+regressions.
+
+\hypertarget{running-the-test-suite}{%
+\subsubsection{Running the test suite}\label{running-the-test-suite}}
+
+At the moment idetools support is still in development so the test suite
+is not integrated with the main test suite and you have to run it
+manually. First you have to compile the tester:
+
+\begin{verbatim}
+$ cd my/nim/checkout/tests
+$ nim c testament/caasdriver.nim
+\end{verbatim}
+
+Running the \texttt{caasdriver} without parameters will attempt to
+process all the test cases in all three operation modes. If a test
+succeeds nothing will be printed and the process will exit with zero. If
+any test fails, the specific line of the test preceding the failure and
+the failure itself will be dumped to stdout, along with a final
+indicator of the success state and operation mode. You can pass the
+parameter \texttt{verbose} to force all output even on successful tests.
+
+The normal operation mode is called \texttt{ProcRun} and it involves
+starting a process for each command or query, similar to running
+manually the Nim compiler from the commandline. The \texttt{CaasRun}
+mode starts a server process to answer all queries. The
+\texttt{SymbolProcRun} mode is used by compiler developers. This means
+that running all tests involves processing all \texttt{*.txt} files
+three times, which can be quite time consuming.
+
+If you don't want to run all the test case files you can pass any
+substring as a parameter to \texttt{caasdriver}. Only files matching the
+passed substring will be run. The filtering doesn't use any globbing
+metacharacters, it's a plain match. For example, to run only
+\texttt{*-compile*.txt} tests in verbose mode:
+
+\begin{verbatim}
+./caasdriver verbose -compile
+\end{verbatim}
+
+\hypertarget{test-case-file-format}{%
+\subsubsection{Test case file format}\label{test-case-file-format}}
+
+All the \texttt{tests/caas/*.txt} files encode a session with the
+compiler:
+
+\begin{itemize}
+\tightlist
+\item
+  The first line indicates the main project file.
+\item
+  Lines starting with \texttt{\textgreater{}} indicate a command to be
+  sent to the compiler and the lines following a command include checks
+  for expected or forbidden output (\texttt{!} for forbidden).
+\item
+  If a line starts with \texttt{\#} it will be ignored completely, so
+  you can use that for comments.
+\item
+  Since some cases are specific to either \texttt{ProcRun} or
+  \texttt{CaasRun} modes, you can prefix a line with the mode and the
+  line will be processed only in that mode.
+\item
+  The rest of the line is treated as a \href{re.html}{regular
+  expression}, so be careful escaping metacharacters like parenthesis.
+\end{itemize}
+
+Before the line is processed as a regular expression, some basic
+variables are searched for and replaced in the tests. The variables
+which will be replaced are:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{\$TESTNIM}: filename specified in the first line of the
+  script.
+\item
+  \textbf{\$MODULE}: like \$TESTNIM but without extension, useful for
+  expected output.
+\end{itemize}
+
+When adding a test case to the suite it is a good idea to write a few
+comments about what the test is meant to verify.

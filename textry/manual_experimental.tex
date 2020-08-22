@@ -1,0 +1,1662 @@
+\hypertarget{nim-experimental-features}{%
+\section{Nim Experimental Features}\label{nim-experimental-features}}
+
+\begin{description}
+\item[Authors]
+Andreas Rumpf
+\item[Version]
+1.3.5
+\end{description}
+
+\hypertarget{about-this-document}{%
+\subsection{About this document}\label{about-this-document}}
+
+This document describes features of Nim that are to be considered
+experimental. Some of these are not covered by the
+\texttt{.experimental} pragma or \texttt{-\/-experimental} switch
+because they are already behind a special syntax and one may want to use
+Nim libraries using these features without using them oneself.
+
+\textbf{Note}: Unless otherwise indicated, these features are not to be
+removed, but refined and overhauled.
+
+\hypertarget{package-level-objects}{%
+\subsection{Package level objects}\label{package-level-objects}}
+
+Every Nim module resides in a (nimble) package. An object type can be
+attached to the package it resides in. If that is done, the type can be
+referenced from other modules as an \texttt{incomplete} object type.
+This feature allows to break up recursive type dependencies across
+module boundaries. Incomplete object types are always passed
+\texttt{byref} and can only be used in pointer like contexts
+(\texttt{var/ref/ptr\ IncompleteObject}) in general since the compiler
+does not yet know the size of the object. To complete an incomplete
+object the \texttt{package} pragma has to be used. \texttt{package}
+implies \texttt{byref}.
+
+As long as a type \texttt{T} is incomplete, neither \texttt{sizeof(T)}
+nor runtime type information for \texttt{T} is available.
+
+Example:
+
+\begin{verbatim}
+# module A (in an arbitrary package)
+type
+  Pack.SomeObject = object ## declare as incomplete object of package 'Pack'
+  Triple = object
+    a, b, c: ref SomeObject ## pointers to incomplete objects are allowed
+
+## Incomplete objects can be used as parameters:
+proc myproc(x: SomeObject) = discard
+\end{verbatim}
+
+\begin{verbatim}
+# module B (in package "Pack")
+type
+  SomeObject* {.package.} = object ## Use 'package' to complete the object
+    s, t: string
+    x, y: int
+\end{verbatim}
+
+\hypertarget{void-type}{%
+\subsection{Void type}\label{void-type}}
+
+The \texttt{void} type denotes the absence of any type. Parameters of
+type \texttt{void} are treated as non-existent, \texttt{void} as a
+return type means that the procedure does not return a value:
+
+\begin{verbatim}
+nothing() # writes "ha" to stdout
+\end{verbatim}
+
+The \texttt{void} type is particularly useful for generic code:
+
+\begin{verbatim}
+proc intProc(x: int) = discard
+proc emptyProc() = discard
+
+callProc[int](intProc, 12)
+callProc[void](emptyProc)
+\end{verbatim}
+
+However, a \texttt{void} type cannot be inferred in generic code:
+
+\begin{verbatim}
+\end{verbatim}
+
+The \texttt{void} type is only valid for parameters and return types;
+other symbols cannot have the type \texttt{void}.
+
+\hypertarget{covariance}{%
+\subsection{Covariance}\label{covariance}}
+
+Covariance in Nim can be introduced only through pointer-like types such
+as \texttt{ptr} and \texttt{ref}. Sequence, Array and OpenArray types,
+instantiated with pointer-like types will be considered covariant if and
+only if they are also immutable. The introduction of a \texttt{var}
+modifier or additional \texttt{ptr} or \texttt{ref} indirections would
+result in invariant treatment of these types.
+
+\texttt{proc} types are currently always invariant, but future versions
+of Nim may relax this rule.
+
+User-defined generic types may also be covariant with respect to some of
+their parameters. By default, all generic params are considered
+invariant, but you may choose the apply the prefix modifier \texttt{in}
+to a parameter to make it contravariant or \texttt{out} to make it
+covariant:
+
+\begin{verbatim}
+RingBuffer[out T] =
+  startPos: int
+  data: seq[T]
+
+Action {.importcpp: "std::function<void ('0)>".} [in T] = object
+\end{verbatim}
+
+When the designated generic parameter is used to instantiate a
+pointer-like type as in the case of {AnnotatedPtr} above, the resulting
+generic type will also have pointer-like covariance:
+
+\begin{verbatim}
+var
+  widgetPtr: AnnotatedPtr[GuiWidget]
+  buttonPtr: AnnotatedPtr[Button]
+
+...
+
+proc drawWidget[T](x: AnnotatedPtr[GuiWidget]) = ...
+
+# you can call procs expecting base types by supplying a derived type
+drawWidget(buttonPtr)
+
+# and you can convert more-specific pointer types to more general ones
+widgetPtr = buttonPtr
+\end{verbatim}
+
+Just like with regular pointers, covariance will be enabled only for
+immutable values:
+
+\begin{verbatim}
+makeComboBox(buttonPtr) # Error, AnnotatedPtr[Button] cannot be modified
+                        # to point to a ComboBox
+\end{verbatim}
+
+On the other hand, in the {RingBuffer} example above, the designated
+generic param is used to instantiate the non-pointer \texttt{seq} type,
+which means that the resulting generic type will have covariance that
+mimics an array or sequence (i.e. it will be covariant only when
+instantiated with \texttt{ptr} and \texttt{ref} types):
+
+\begin{verbatim}
+type
+  Base = object of RootObj
+  Derived = object of Base
+
+proc consumeBaseValues(b: RingBuffer[Base]) = ...
+
+var derivedValues: RingBuffer[Derived]
+
+consumeBaseValues(derivedValues) # Error, Base and Derived values may differ
+                                 # in size
+
+proc consumeBasePointers(b: RingBuffer[ptr Base]) = ...
+
+var derivedPointers: RingBuffer[ptr Derived]
+
+consumeBaseValues(derivedPointers) # This is legal
+\end{verbatim}
+
+Please note that Nim will treat the user-defined pointer-like types as
+proper alternatives to the built-in pointer types. That is, types such
+as {seq{[}AnnotatedPtr{[}T{]}{]}} or
+{RingBuffer{[}AnnotatedPtr{[}T{]}{]}} will also be considered covariant
+and you can create new pointer-like types by instantiating other
+user-defined pointer-like types.
+
+The contravariant parameters introduced with the \texttt{in} modifier
+are currently useful only when interfacing with imported types having
+such semantics.
+
+\hypertarget{automatic-dereferencing}{%
+\subsection{Automatic dereferencing}\label{automatic-dereferencing}}
+
+Automatic dereferencing is performed for the first argument of a routine
+call. This feature has to be only enabled via
+\texttt{\{.experimental:\ "implicitDeref".\}}:
+
+\begin{verbatim}
+proc depth(x: NodeObj): int = ...
+
+var
+  n: Node
+new(n)
+echo n.depth
+# no need to write n[].depth either
+\end{verbatim}
+
+\hypertarget{code-reordering}{%
+\subsection{Code reordering}\label{code-reordering}}
+
+The code reordering feature can implicitly rearrange procedure,
+template, and macro definitions along with variable declarations and
+initializations at the top level scope so that, to a large extent, a
+programmer should not have to worry about ordering definitions correctly
+or be forced to use forward declarations to preface definitions inside a
+module.
+
+Example:
+
+\begin{verbatim}
+{.experimental: "codeReordering".}
+
+proc foo(x: int) =
+  bar(x)
+
+proc bar(x: int) =
+  echo(x)
+
+foo(10)
+\end{verbatim}
+
+Variables can also be reordered as well. Variables that are
+\emph{initialized} (i.e. variables that have their declaration and
+assignment combined in a single statement) can have their entire
+initialization statement reordered. Be wary of what code is executed at
+the top level:
+
+\begin{verbatim}
+proc a() =
+  echo(foo)
+
+var foo = 5
+
+a() # outputs: "5"
+\end{verbatim}
+
+It is important to note that reordering \emph{only} works for symbols at
+top level scope. Therefore, the following will \emph{fail to compile:}
+
+\begin{verbatim}
+proc a() =
+  b()
+  proc b() =
+    echo("Hello!")
+
+a()
+\end{verbatim}
+
+\hypertarget{automatic-self-insertions}{%
+\subsection{Automatic self insertions}\label{automatic-self-insertions}}
+
+\textbf{Note}: The \texttt{.this} pragma is deprecated and should not be
+used anymore.
+
+Starting with version 0.14 of the language, Nim supports \texttt{field}
+as a shortcut for \texttt{self.field} comparable to the \texttt{this}
+keyword in Java or C++. This feature has to be explicitly enabled via a
+\texttt{\{.this:\ self.\}} statement pragma (instead of \texttt{self}
+any other identifier can be used too). This pragma is active for the
+rest of the module:
+
+\begin{verbatim}
+{.this: self.}
+proc sumFields(self: Child): int =
+  result = parentField + childField
+  # is rewritten to:
+  # result = self.parentField + self.childField
+\end{verbatim}
+
+In addition to fields, routine applications are also rewritten, but only
+if no other interpretation of the call is possible:
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{named-argument-overloading}{%
+\subsection{Named argument
+overloading}\label{named-argument-overloading}}
+
+Routines with the same type signature can be called differently if a
+parameter has different names. This does not need an
+\texttt{experimental} switch, but is an unstable feature.
+
+\begin{verbatim}
+foo(x = 2)
+# Using x: 2
+foo(y = 2)
+# Using y: 2
+\end{verbatim}
+
+\hypertarget{do-notation}{%
+\subsection{Do notation}\label{do-notation}}
+
+As a special more convenient notation, proc expressions involved in
+procedure calls can use the \texttt{do} keyword:
+
+\begin{verbatim}
+# Less parenthesis using the method plus command syntax:
+cities = cities.map do (x:string) -> string:
+  "City of " & x
+
+# In macros, the do notation is often used for quasi-quoting
+macroResults.add quote do:
+  if not `ex`:
+    echo `info`, ": Check failed: ", `expString`
+\end{verbatim}
+
+\texttt{do} is written after the parentheses enclosing the regular proc
+params. The proc expression represented by the do block is appended to
+them. In calls using the command syntax, the do block will bind to the
+immediately preceding expression, transforming it in a call.
+
+\texttt{do} with parentheses is an anonymous \texttt{proc}; however a
+\texttt{do} without parentheses is just a block of code. The \texttt{do}
+notation can be used to pass multiple blocks to a macro:
+
+\begin{verbatim}
+performWithUndo do:
+  # multiple-line block of code
+  # to perform the task
+do:
+  # code to undo it
+\end{verbatim}
+
+\hypertarget{special-operators}{%
+\subsection{Special Operators}\label{special-operators}}
+
+\hypertarget{dot-operators}{%
+\subsubsection{dot operators}\label{dot-operators}}
+
+\textbf{Note}: Dot operators are still experimental and so need to be
+enabled via \texttt{\{.experimental:\ "dotOperators".\}}.
+
+Nim offers a special family of dot operators that can be used to
+intercept and rewrite proc call and field access attempts, referring to
+previously undeclared symbol names. They can be used to provide a fluent
+interface to objects lying outside the static confines of the type
+system such as values from dynamic scripting languages or dynamic file
+formats such as JSON or XML.
+
+When Nim encounters an expression that cannot be resolved by the
+standard overload resolution rules, the current scope will be searched
+for a dot operator that can be matched against a re-written form of the
+expression, where the unknown field or proc name is passed to an
+\texttt{untyped} parameter:
+
+\begin{verbatim}
+\end{verbatim}
+
+The matched dot operators can be symbols of any callable kind (procs,
+templates and macros), depending on the desired effect:
+
+\begin{verbatim}
+var js = parseJson("{ x: 1, y: 2}")
+echo js.x # outputs 1
+echo js.y # outputs 2
+\end{verbatim}
+
+The following dot operators are available:
+
+\hypertarget{operator-.}{%
+\subsubsection{\texorpdfstring{operator
+{.}}{operator .}}\label{operator-.}}
+
+This operator will be matched against both field accesses and method
+calls.
+
+\hypertarget{operator-.-1}{%
+\subsubsection{\texorpdfstring{operator
+{.()}}{operator .()}}\label{operator-.-1}}
+
+This operator will be matched exclusively against method calls. It has
+higher precedence than the {.} operator and this allows one to handle
+expressions like {x.y} and {x.y()} differently if one is interfacing
+with a scripting language for example.
+
+\hypertarget{operator-.-2}{%
+\subsubsection{\texorpdfstring{operator
+{.=}}{operator .=}}\label{operator-.-2}}
+
+This operator will be matched against assignments to missing fields.
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{not-nil-annotation}{%
+\subsection{Not nil annotation}\label{not-nil-annotation}}
+
+\textbf{Note:} This is an experimental feature. It can be enabled with
+\texttt{\{.experimental:\ "notnil"\}}.
+
+All types for which \texttt{nil} is a valid value can be annotated with
+the \texttt{not\ nil} annotation to exclude \texttt{nil} as a valid
+value:
+
+\begin{verbatim}
+type
+  PObject = ref TObj not nil
+  TProc = (proc (x, y: int)) not nil
+
+proc p(x: PObject) =
+  echo "not nil"
+
+# compiler catches this:
+p(nil)
+
+# and also this:
+var x: PObject
+p(x)
+\end{verbatim}
+
+The compiler ensures that every code path initializes variables which
+contain non-nilable pointers. The details of this analysis are still to
+be specified here.
+
+\hypertarget{concepts}{%
+\subsection{Concepts}\label{concepts}}
+
+Concepts, also known as "user-defined type classes", are used to specify
+an arbitrary set of requirements that the matched type must satisfy.
+
+Concepts are written in the following form:
+
+\begin{verbatim}
+Stack[T] = concept s, var v
+  s.pop() is T
+  v.push(T)
+
+  s.len is Ordinal
+
+  for value in s:
+    value is T
+\end{verbatim}
+
+The concept is a match if:
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi})}
+\tightlist
+\item
+  all of the expressions within the body can be compiled for the tested
+  type
+\item
+  all statically evaluable boolean expressions in the body must be true
+\end{enumerate}
+
+The identifiers following the \texttt{concept} keyword represent
+instances of the currently matched type. You can apply any of the
+standard type modifiers such as \texttt{var}, \texttt{ref}, \texttt{ptr}
+and \texttt{static} to denote a more specific type of instance. You can
+also apply the {type} modifier to create a named instance of the type
+itself:
+
+\begin{verbatim}
+\end{verbatim}
+
+Within the concept body, types can appear in positions where ordinary
+values and parameters are expected. This provides a more convenient way
+to check for the presence of callable symbols with specific signatures:
+
+\begin{verbatim}
+\end{verbatim}
+
+In order to check for symbols accepting \texttt{type} params, you must
+prefix the type with the explicit \texttt{type} modifier. The named
+instance of the type, following the \texttt{concept} keyword is also
+considered to have the explicit modifier and will be matched only as a
+type.
+
+\begin{verbatim}
+# Let's define a couple of concepts, known from Algebra:
+AdditiveMonoid* = concept x, y, type T
+  x + y is T
+  T.zero is T # require a proc such as `int.zero` or 'Position.zero'
+
+AdditiveGroup* = concept x, y, type T
+  x is AdditiveMonoid
+  -x is T
+  x - y is T
+\end{verbatim}
+
+Please note that the \texttt{is} operator allows one to easily verify
+the precise type signatures of the required operations, but since type
+inference and default parameters are still applied in the concept body,
+it's also possible to describe usage protocols that do not reveal
+implementation details.
+
+Much like generics, concepts are instantiated exactly once for each
+tested type and any static code included within the body is executed
+only once.
+
+\hypertarget{concept-diagnostics}{%
+\subsubsection{Concept diagnostics}\label{concept-diagnostics}}
+
+By default, the compiler will report the matching errors in concepts
+only when no other overload can be selected and a normal compilation
+error is produced. When you need to understand why the compiler is not
+matching a particular concept and, as a result, a wrong overload is
+selected, you can apply the \texttt{explain} pragma to either the
+concept body or a particular call-site.
+
+\begin{verbatim}
+overloadedProc(x, y, z) {.explain.}
+\end{verbatim}
+
+This will provide Hints in the compiler output either every time the
+concept is not matched or only on the particular call-site.
+
+\hypertarget{generic-concepts-and-type-binding-rules}{%
+\subsubsection{Generic concepts and type binding
+rules}\label{generic-concepts-and-type-binding-rules}}
+
+The concept types can be parametric just like the regular generic types:
+
+\begin{verbatim}
+import typetraits
+
+type
+  AnyMatrix*[R, C: static int; T] = concept m, var mvar, type M
+    M.ValueType is T
+    M.Rows == R
+    M.Cols == C
+
+    m[int, int] is T
+    mvar[int, int] = T
+
+    type TransposedType = stripGenericParams(M)[C, R, T]
+
+  AnySquareMatrix*[N: static int, T] = AnyMatrix[N, N, T]
+
+  AnyTransform3D* = AnyMatrix[4, 4, float]
+
+proc transposed*(m: AnyMatrix): m.TransposedType =
+  for r in 0 ..< m.R:
+    for c in 0 ..< m.C:
+      result[r, c] = m[c, r]
+
+proc determinant*(m: AnySquareMatrix): int =
+  ...
+
+proc setPerspectiveProjection*(m: AnyTransform3D) =
+  ...
+
+--------------
+### matrix.nim
+
+type
+  Matrix*[M, N: static int; T] = object
+    data: array[M*N, T]
+
+proc `[]`*(M: Matrix; m, n: int): M.T =
+  M.data[m * M.N + n]
+
+proc `[]=`*(M: var Matrix; m, n: int; v: M.T) =
+  M.data[m * M.N + n] = v
+
+# Adapt the Matrix type to the concept's requirements
+template Rows*(M: typedesc[Matrix]): int = M.M
+template Cols*(M: typedesc[Matrix]): int = M.N
+template ValueType*(M: typedesc[Matrix]): typedesc = M.T
+
+-------------
+### usage.nim
+
+import matrix, matrixalgo
+
+var
+  m: Matrix[3, 3, int]
+  projectionMatrix: Matrix[4, 4, float]
+
+echo m.transposed.determinant
+setPerspectiveProjection projectionMatrix
+\end{verbatim}
+
+When the concept type is matched against a concrete type, the unbound
+type parameters are inferred from the body of the concept in a way that
+closely resembles the way generic parameters of callable symbols are
+inferred on call sites.
+
+Unbound types can appear both as params to calls such as {s.push(T)} and
+on the right-hand side of the \texttt{is} operator in cases such as
+{x.pop is T} and {x.data is seq{[}T{]}}.
+
+Unbound static params will be inferred from expressions involving the
+{==} operator and also when types dependent on them are being matched:
+
+\begin{verbatim}
+\end{verbatim}
+
+The Nim compiler includes a simple linear equation solver, allowing it
+to infer static params in some situations where integer arithmetic is
+involved.
+
+Just like in regular type classes, Nim discriminates between
+\texttt{bind\ once} and \texttt{bind\ many} types when matching the
+concept. You can add the \texttt{distinct} modifier to any of the
+otherwise inferable types to get a type that will be matched without
+permanently inferring it. This may be useful when you need to match
+several procs accepting the same wide class of types:
+
+\begin{verbatim}
+type
+  MyConcept = concept o
+    # this could be inferred to a type such as Enumerable[int]
+    o.foo is distinct Enumerable
+
+    # this could be inferred to a different type such as Enumerable[float]
+    o.bar is distinct Enumerable
+
+    # it's also possible to give an alias name to a `bind many` type class
+    type Enum = distinct Enumerable
+    o.baz is Enum
+\end{verbatim}
+
+On the other hand, using \texttt{bind\ once} types allows you to test
+for equivalent types used in multiple signatures, without actually
+requiring any concrete types, thus allowing you to encode
+implementation-defined types:
+
+\begin{verbatim}
+type T2 = seq[SomeNumber]
+x.alpha(T2)
+x.omega(T2) # both procs must accept the same type
+            # and it must be a numeric sequence
+\end{verbatim}
+
+As seen in the previous examples, you can refer to generic concepts such
+as {Enumerable{[}T{]}} just by their short name. Much like the regular
+generic types, the concept will be automatically instantiated with the
+bind once auto type in the place of each missing generic param.
+
+Please note that generic concepts such as {Enumerable{[}T{]}} can be
+matched against concrete types such as {string}. Nim doesn't require the
+concept type to have the same number of parameters as the type being
+matched. If you wish to express a requirement towards the generic
+parameters of the matched type, you can use a type mapping operator such
+as {genericHead} or {stripGenericParams} within the body of the concept
+to obtain the uninstantiated version of the type, which you can then try
+to instantiate in any required way. For example, here is how one might
+define the classic {Functor} concept from Haskell and then demonstrate
+that Nim's {Option{[}T{]}} type is an instance of it:
+
+\begin{verbatim}
+import sugar, typetraits
+
+type
+  Functor[A] = concept f
+    type MatchedGenericType = genericHead(typeof(f))
+      # `f` will be a value of a type such as `Option[T]`
+      # `MatchedGenericType` will become the `Option` type
+
+    f.val is A
+      # The Functor should provide a way to obtain
+      # a value stored inside it
+
+    type T = auto
+    map(f, A -> T) is MatchedGenericType[T]
+      # And it should provide a way to map one instance of
+      # the Functor to a instance of a different type, given
+      # a suitable `map` operation for the enclosed values
+
+import options
+echo Option[int] is Functor # prints true
+\end{verbatim}
+
+\hypertarget{concept-derived-values}{%
+\subsubsection{Concept derived values}\label{concept-derived-values}}
+
+All top level constants or types appearing within the concept body are
+accessible through the dot operator in procs where the concept was
+successfully matched to a concrete type:
+
+\begin{verbatim}
+t1 < t2 is bool
+
+type TimeSpan = typeof(t1 - t2)
+TimeSpan * int is TimeSpan
+TimeSpan + TimeSpan is TimeSpan
+
+t1 + TimeSpan is T
+
+proc eventsJitter(events: Enumerable[DateTime]): float =
+var
+# this variable will have the inferred TimeSpan type for
+# the concrete Date-like value the proc was called with:
+averageInterval: DateTime.TimeSpan
+
+deviation: float
+...
+\end{verbatim}
+
+\hypertarget{concept-refinement}{%
+\subsubsection{Concept refinement}\label{concept-refinement}}
+
+When the matched type within a concept is directly tested against a
+different concept, we say that the outer concept is a refinement of the
+inner concept and thus it is more-specific. When both concepts are
+matched in a call during overload resolution, Nim will assign a higher
+precedence to the most specific one. As an alternative way of defining
+concept refinements, you can use the object inheritance syntax involving
+the \texttt{of} keyword:
+
+\begin{verbatim}
+VertexType is Copyable
+EdgeType is Copyable
+
+var
+  v: VertexType
+  e: EdgeType
+
+IncidendeGraph = concept of Graph
+# symbols such as variables and types from the refined
+# concept are automatically in scope:
+
+g.source(e) is VertexType
+g.target(e) is VertexType
+
+g.outgoingEdges(v) is Enumerable[EdgeType]
+
+BidirectionalGraph = concept g, type G
+# The following will also turn the concept into a refinement when it
+# comes to overload resolution, but it doesn't provide the convenient
+# symbol inheritance
+g is IncidendeGraph
+
+g.incomingEdges(G.VertexType) is Enumerable[G.EdgeType]
+
+proc f(g: IncidendeGraph)
+proc f(g: BidirectionalGraph) # this one will be preferred if we pass a type
+                          # matching the BidirectionalGraph concept
+\end{verbatim}
+
+\hypertarget{type-bound-operations}{%
+\subsection{Type bound operations}\label{type-bound-operations}}
+
+There are 4 operations that are bound to a type:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Assignment
+\item
+  Moves
+\item
+  Destruction
+\item
+  Deep copying for communication between threads
+\end{enumerate}
+
+These operations can be \emph{overridden} instead of \emph{overloaded}.
+This means the implementation is automatically lifted to structured
+types. For instance if type \texttt{T} has an overridden assignment
+operator \texttt{=} this operator is also used for assignments of the
+type \texttt{seq{[}T{]}}. Since these operations are bound to a type
+they have to be bound to a nominal type for reasons of simplicity of
+implementation: This means an overridden \texttt{deepCopy} for
+\texttt{ref\ T} is really bound to \texttt{T} and not to
+\texttt{ref\ T}. This also means that one cannot override
+\texttt{deepCopy} for both \texttt{ptr\ T} and \texttt{ref\ T} at the
+same time; instead a helper distinct or object type has to be used for
+one pointer type.
+
+Assignments, moves and destruction are specified in the
+\href{destructors.html}{destructors} document.
+
+\hypertarget{deepcopy}{%
+\subsubsection{deepCopy}\label{deepcopy}}
+
+\texttt{=deepCopy} is a builtin that is invoked whenever data is passed
+to a \texttt{spawn}'ed proc to ensure memory safety. The programmer can
+override its behaviour for a specific \texttt{ref} or \texttt{ptr} type
+\texttt{T}. (Later versions of the language may weaken this
+restriction.)
+
+The signature has to be:
+
+\begin{verbatim}
+\end{verbatim}
+
+This mechanism will be used by most data structures that support shared
+memory like channels to implement thread safe automatic memory
+management.
+
+The builtin \texttt{deepCopy} can even clone closures and their
+environments. See the documentation of
+\protect\hyperlink{parallel-amp-spawn-spawn-statement}{spawn} for
+details.
+
+\hypertarget{case-statement-macros}{%
+\subsection{Case statement macros}\label{case-statement-macros}}
+
+A macro that needs to be called \texttt{match} can be used to rewrite
+\texttt{case} statements in order to implement
+\texttt{pattern\ matching} for certain types. The following example
+implements a simplistic form of pattern matching for tuples, leveraging
+the existing equality operator for tuples (as provided in
+\texttt{system.==}):
+
+\begin{verbatim}
+{.experimental: "caseStmtMacros".}
+
+import macros
+
+macro match(n: tuple): untyped =
+  result = newTree(nnkIfStmt)
+  let selector = n[0]
+  for i in 1 ..< n.len:
+    let it = n[i]
+    case it.kind
+    of nnkElse, nnkElifBranch, nnkElifExpr, nnkElseExpr:
+      result.add it
+    of nnkOfBranch:
+      for j in 0..it.len-2:
+        let cond = newCall("==", selector, it[j])
+        result.add newTree(nnkElifBranch, cond, it[^1])
+    else:
+      error "'match' cannot handle this node", it
+  echo repr result
+
+case ("foo", 78)
+of ("foo", 78): echo "yes"
+of ("bar", 88): echo "no"
+else: discard
+\end{verbatim}
+
+Currently case statement macros must be enabled explicitly via
+\texttt{\{.experimental:\ "caseStmtMacros".\}}.
+
+\texttt{match} macros are subject to overload resolution. First the
+\texttt{case}'s selector expression is used to determine which
+\texttt{match} macro to call. To this macro is then passed the complete
+\texttt{case} statement body and the macro is evaluated.
+
+In other words, the macro needs to transform the full \texttt{case}
+statement but only the statement's selector expression is used to
+determine which macro to call.
+
+\hypertarget{for-loop-macros}{%
+\subsubsection{For loop macros}\label{for-loop-macros}}
+
+A macro that takes as its only input parameter an expression of the
+special type \texttt{system.ForLoopStmt} can rewrite the entirety of a
+\texttt{for} loop:
+
+\begin{verbatim}
+import macros
+{.experimental: "forLoopMacros".}
+
+macro enumerate(x: ForLoopStmt): untyped =
+  expectKind x, nnkForStmt
+  # we strip off the first for loop variable and use
+  # it as an integer counter:
+  result = newStmtList()
+  result.add newVarStmt(x[0], newLit(0))
+  var body = x[^1]
+  if body.kind != nnkStmtList:
+    body = newTree(nnkStmtList, body)
+  body.add newCall(bindSym"inc", x[0])
+  var newFor = newTree(nnkForStmt)
+  for i in 1..x.len-3:
+    newFor.add x[i]
+  # transform enumerate(X) to 'X'
+  newFor.add x[^2][1]
+  newFor.add body
+  result.add newFor
+  # now wrap the whole macro in a block to create a new scope
+  result = quote do:
+    block: `result`
+
+for a, b in enumerate(items([1, 2, 3])):
+  echo a, " ", b
+
+# without wrapping the macro in a block, we'd need to choose different
+# names for `a` and `b` here to avoid redefinition errors
+for a, b in enumerate([1, 2, 3, 5]):
+  echo a, " ", b
+\end{verbatim}
+
+Currently for loop macros must be enabled explicitly via
+\texttt{\{.experimental:\ "forLoopMacros".\}}.
+
+\hypertarget{term-rewriting-macros}{%
+\subsection{Term rewriting macros}\label{term-rewriting-macros}}
+
+Term rewriting macros are macros or templates that have not only a
+\emph{name} but also a \emph{pattern} that is searched for after the
+semantic checking phase of the compiler: This means they provide an easy
+way to enhance the compilation pipeline with user defined optimizations:
+
+\begin{verbatim}
+let x = 3
+echo x * 2
+\end{verbatim}
+
+The compiler now rewrites \texttt{x\ *\ 2} as \texttt{x\ +\ x}. The code
+inside the curlies is the pattern to match against. The operators
+\texttt{*}, \texttt{**}, \texttt{\textbar{}}, \texttt{\textasciitilde{}}
+have a special meaning in patterns if they are written in infix
+notation, so to match verbatim against \texttt{*} the ordinary function
+call syntax needs to be used.
+
+Term rewriting macro are applied recursively, up to a limit. This means
+that if the result of a term rewriting macro is eligible for another
+rewriting, the compiler will try to perform it, and so on, until no more
+optimizations are applicable. To avoid putting the compiler into an
+infinite loop, there is a hard limit on how many times a single term
+rewriting macro can be applied. Once this limit has been passed, the
+term rewriting macro will be ignored.
+
+Unfortunately optimizations are hard to get right and even the tiny
+example is \textbf{wrong}:
+
+\begin{verbatim}
+proc f(): int =
+  echo "side effect!"
+  result = 55
+
+echo f() * 2
+\end{verbatim}
+
+We cannot duplicate 'a' if it denotes an expression that has a side
+effect! Fortunately Nim supports side effect analysis:
+
+\begin{verbatim}
+proc f(): int =
+  echo "side effect!"
+  result = 55
+
+echo f() * 2 # not optimized ;-)
+\end{verbatim}
+
+You can make one overload matching with a constraint and one without,
+and the one with a constraint will have precedence, and so you can
+handle both cases differently.
+
+So what about \texttt{2\ *\ a}? We should tell the compiler \texttt{*}
+is commutative. We cannot really do that however as the following code
+only swaps arguments blindly:
+
+\begin{verbatim}
+\end{verbatim}
+
+What optimizers really need to do is a \emph{canonicalization}:
+
+\begin{verbatim}
+\end{verbatim}
+
+The \texttt{int\{lit\}} parameter pattern matches against an expression
+of type \texttt{int}, but only if it's a literal.
+
+\hypertarget{parameter-constraints}{%
+\subsubsection{Parameter constraints}\label{parameter-constraints}}
+
+The \texttt{parameter\ constraint} expression can use the operators
+\texttt{\textbar{}} (or), \texttt{\&} (and) and
+\texttt{\textasciitilde{}} (not) and the following predicates:
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+Predicate & Meaning\tabularnewline
+\midrule
+\endhead
+\texttt{atom} & The matching node has no children.\tabularnewline
+\texttt{lit} & The matching node is a literal like "abc",
+12.\tabularnewline
+\texttt{sym} & The matching node must be a symbol (a bound
+identifier).\tabularnewline
+\texttt{ident} & The matching node must be an identifier (an unbound
+identifier).\tabularnewline
+\texttt{call} & The matching AST must be a call/apply
+expression.\tabularnewline
+\texttt{lvalue} & The matching AST must be an lvalue.\tabularnewline
+\texttt{sideeffect} & The matching AST must have a side
+effect.\tabularnewline
+\texttt{nosideeffect} & The matching AST must have no side
+effect.\tabularnewline
+\texttt{param} & A symbol which is a parameter.\tabularnewline
+\texttt{genericparam} & A symbol which is a generic
+parameter.\tabularnewline
+\texttt{module} & A symbol which is a module.\tabularnewline
+\texttt{type} & A symbol which is a type.\tabularnewline
+\texttt{var} & A symbol which is a variable.\tabularnewline
+\texttt{let} & A symbol which is a \texttt{let} variable.\tabularnewline
+\texttt{const} & A symbol which is a constant.\tabularnewline
+\texttt{result} & The special \texttt{result} variable.\tabularnewline
+\texttt{proc} & A symbol which is a proc.\tabularnewline
+\texttt{method} & A symbol which is a method.\tabularnewline
+\texttt{iterator} & A symbol which is an iterator.\tabularnewline
+\texttt{converter} & A symbol which is a converter.\tabularnewline
+\texttt{macro} & A symbol which is a macro.\tabularnewline
+\texttt{template} & A symbol which is a template.\tabularnewline
+\texttt{field} & A symbol which is a field in a tuple or an
+object.\tabularnewline
+\texttt{enumfield} & A symbol which is a field in an
+enumeration.\tabularnewline
+\texttt{forvar} & A for loop variable.\tabularnewline
+\texttt{label} & A label (used in \texttt{block}
+statements).\tabularnewline
+\texttt{nk*} & The matching AST must have the specified kind. (Example:
+\texttt{nkIfStmt} denotes an \texttt{if} statement.)\tabularnewline
+\texttt{alias} & States that the marked parameter needs to alias with
+\emph{some} other parameter.\tabularnewline
+\texttt{noalias} & States that \emph{every} other parameter must not
+alias with the marked parameter.\tabularnewline
+\bottomrule
+\end{longtable}
+
+Predicates that share their name with a keyword have to be escaped with
+backticks. The \texttt{alias} and \texttt{noalias} predicates refer not
+only to the matching AST, but also to every other bound parameter;
+syntactically they need to occur after the ordinary AST predicates:
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{pattern-operators}{%
+\subsubsection{Pattern operators}\label{pattern-operators}}
+
+The operators \texttt{*}, \texttt{**}, \texttt{\textbar{}},
+\texttt{\textasciitilde{}} have a special meaning in patterns if they
+are written in infix notation.
+
+\hypertarget{the-operator}{%
+\paragraph{\texorpdfstring{The \texttt{\textbar{}}
+operator}{The \textbar{} operator}}\label{the-operator}}
+
+The \texttt{\textbar{}} operator if used as infix operator creates an
+ordered choice:
+
+\begin{verbatim}
+\end{verbatim}
+
+The matching is performed after the compiler performed some
+optimizations like constant folding, so the following does not work:
+
+\begin{verbatim}
+\end{verbatim}
+
+The reason is that the compiler already transformed the 1 into "1" for
+the \texttt{echo} statement. However, a term rewriting macro should not
+change the semantics anyway. In fact they can be deactivated with the
+\texttt{-\/-patterns:off} command line option or temporarily with the
+\texttt{patterns} pragma.
+
+\hypertarget{the-operator-1}{%
+\paragraph{\texorpdfstring{The \texttt{\{\}}
+operator}{The \{\} operator}}\label{the-operator-1}}
+
+A pattern expression can be bound to a pattern parameter via the
+\texttt{expr\{param\}} notation:
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{the-operator-2}{%
+\paragraph{\texorpdfstring{The \texttt{\textasciitilde{}}
+operator}{The \textasciitilde{} operator}}\label{the-operator-2}}
+
+The \texttt{\textasciitilde{}} operator is the \textbf{not} operator in
+patterns:
+
+\begin{verbatim}
+var
+  a = false
+  b = true
+  c = false
+a = b and c
+echo a
+\end{verbatim}
+
+\hypertarget{the-operator-3}{%
+\paragraph{\texorpdfstring{The \texttt{*}
+operator}{The * operator}}\label{the-operator-3}}
+
+The \texttt{*} operator can \emph{flatten} a nested binary expression
+like \texttt{a\ \&\ b\ \&\ c} to \texttt{\&(a,\ b,\ c)}:
+
+\begin{verbatim}
+proc `&&`(s: varargs[string]): string =
+  result = s[0]
+  for i in 1..len(s)-1: result.add s[i]
+  inc calls
+
+template optConc{ `&&` * a }(a: string): untyped = &&a
+
+let space = " "
+echo "my" && (space & "awe" && "some " ) && "concat"
+
+# check that it's been optimized properly:
+doAssert calls == 1
+\end{verbatim}
+
+The second operator of {*} must be a parameter; it is used to gather all
+the arguments. The expression
+\texttt{"my"\ \&\&\ (space\ \&\ "awe"\ \&\&\ "some\ "\ )\ \&\&\ "concat"}
+is passed to \texttt{optConc} in \texttt{a} as a special list (of kind
+\texttt{nkArgList}) which is flattened into a call expression; thus the
+invocation of \texttt{optConc} produces:
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{the-operator-4}{%
+\paragraph{\texorpdfstring{The \texttt{**}
+operator}{The ** operator}}\label{the-operator-4}}
+
+The \texttt{**} is much like the \texttt{*} operator, except that it
+gathers not only all the arguments, but also the matched operators in
+reverse polish notation:
+
+\begin{verbatim}
+type
+  Matrix = object
+    dummy: int
+
+proc `*`(a, b: Matrix): Matrix = discard
+proc `+`(a, b: Matrix): Matrix = discard
+proc `-`(a, b: Matrix): Matrix = discard
+proc `$`(a: Matrix): string = result = $a.dummy
+proc mat21(): Matrix =
+  result.dummy = 21
+
+macro optM{ (`+`|`-`|`*`) ** a }(a: Matrix): untyped =
+  echo treeRepr(a)
+  result = newCall(bindSym"mat21")
+
+var x, y, z: Matrix
+
+echo x + y * z - x
+\end{verbatim}
+
+This passes the expression \texttt{x\ +\ y\ *\ z\ -\ x} to the
+\texttt{optM} macro as an \texttt{nnkArgList} node containing:
+
+\begin{verbatim}
+Arglist
+  Sym "x"
+  Sym "y"
+  Sym "z"
+  Sym "*"
+  Sym "+"
+  Sym "x"
+  Sym "-"
+\end{verbatim}
+
+(Which is the reverse polish notation of \texttt{x\ +\ y\ *\ z\ -\ x}.)
+
+\hypertarget{parameters}{%
+\subsubsection{Parameters}\label{parameters}}
+
+Parameters in a pattern are type checked in the matching process. If a
+parameter is of the type \texttt{varargs} it is treated specially and it
+can match 0 or more arguments in the AST to be matched against:
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{example-partial-evaluation}{%
+\subsubsection{Example: Partial
+evaluation}\label{example-partial-evaluation}}
+
+The following example shows how some simple partial evaluation can be
+implemented with term rewriting:
+
+\begin{verbatim}
+template optP1{p(x, y, true)}(x, y: untyped): untyped = x + y
+template optP2{p(x, y, false)}(x, y: untyped): untyped = x - y
+\end{verbatim}
+
+\hypertarget{example-hoisting}{%
+\subsubsection{Example: Hoisting}\label{example-hoisting}}
+
+The following example shows how some form of hoisting can be
+implemented:
+
+\begin{verbatim}
+template optPeg{peg(pattern)}(pattern: string{lit}): Peg =
+  var gl {.global, gensym.} = peg(pattern)
+  gl
+
+for i in 0 .. 3:
+  echo match("(a b c)", peg"'(' @ ')'")
+  echo match("W_HI_Le", peg"\y 'while'")
+\end{verbatim}
+
+The \texttt{optPeg} template optimizes the case of a peg constructor
+with a string literal, so that the pattern will only be parsed once at
+program startup and stored in a global \texttt{gl} which is then
+re-used. This optimization is called hoisting because it is comparable
+to classical loop hoisting.
+
+\hypertarget{ast-based-overloading}{%
+\subsection{AST based overloading}\label{ast-based-overloading}}
+
+Parameter constraints can also be used for ordinary routine parameters;
+these constraints affect ordinary overloading resolution then:
+
+\begin{verbatim}
+const
+  constant = "abc"
+
+var
+  variable = "xyz"
+
+optLit("literal")
+optLit(constant)
+optLit(variable)
+\end{verbatim}
+
+However, the constraints \texttt{alias} and \texttt{noalias} are not
+available in ordinary routines.
+
+\hypertarget{parallel-spawn}{%
+\subsection{Parallel \& Spawn}\label{parallel-spawn}}
+
+Nim has two flavors of parallelism: 1) \texttt{Structured} parallelism
+via the \texttt{parallel} statement. 2) \texttt{Unstructured}
+parallelism via the standalone \texttt{spawn} statement.
+
+Nim has a builtin thread pool that can be used for CPU intensive tasks.
+For IO intensive tasks the \texttt{async} and \texttt{await} features
+should be used instead. Both parallel and spawn need the
+\href{threadpool.html}{threadpool} module to work.
+
+Somewhat confusingly, \texttt{spawn} is also used in the
+\texttt{parallel} statement with slightly different semantics.
+\texttt{spawn} always takes a call expression of the form
+\texttt{f(a,\ ...)}. Let \texttt{T} be \texttt{f}'s return type. If
+\texttt{T} is \texttt{void} then \texttt{spawn}'s return type is also
+\texttt{void} otherwise it is \texttt{FlowVar{[}T{]}}.
+
+Within a \texttt{parallel} section sometimes the \texttt{FlowVar{[}T{]}}
+is eliminated to \texttt{T}. This happens when \texttt{T} does not
+contain any GC'ed memory. The compiler can ensure the location in
+\texttt{location\ =\ spawn\ f(...)} is not read prematurely within a
+\texttt{parallel} section and so there is no need for the overhead of an
+indirection via \texttt{FlowVar{[}T{]}} to ensure correctness.
+
+\textbf{Note}: Currently exceptions are not propagated between
+\texttt{spawn}'ed tasks!
+
+\hypertarget{spawn-statement}{%
+\subsubsection{Spawn statement}\label{spawn-statement}}
+
+\texttt{spawn} can be used to pass a task to the thread pool:
+
+\begin{verbatim}
+proc processLine(line: string) =
+  discard "do some heavy lifting here"
+
+for x in lines("myinput.txt"):
+  spawn processLine(x)
+sync()
+\end{verbatim}
+
+For reasons of type safety and implementation simplicity the expression
+that \texttt{spawn} takes is restricted:
+
+\begin{itemize}
+\tightlist
+\item
+  It must be a call expression \texttt{f(a,\ ...)}.
+\item
+  \texttt{f} must be \texttt{gcsafe}.
+\item
+  \texttt{f} must not have the calling convention \texttt{closure}.
+\item
+  \texttt{f}'s parameters may not be of type \texttt{var}. This means
+  one has to use raw \texttt{ptr}'s for data passing reminding the
+  programmer to be careful.
+\item
+  \texttt{ref} parameters are deeply copied which is a subtle semantic
+  change and can cause performance problems but ensures memory safety.
+  This deep copy is performed via \texttt{system.deepCopy} and so can be
+  overridden.
+\item
+  For \emph{safe} data exchange between \texttt{f} and the caller a
+  global \texttt{TChannel} needs to be used. However, since spawn can
+  return a result, often no further communication is required.
+\end{itemize}
+
+\texttt{spawn} executes the passed expression on the thread pool and
+returns a \texttt{data\ flow\ variable} \texttt{FlowVar{[}T{]}} that can
+be read from. The reading with the \texttt{\^{}} operator is
+\textbf{blocking}. However, one can use \texttt{blockUntilAny} to wait
+on multiple flow variables at the same time:
+
+\begin{verbatim}
+# wait until 2 out of 3 servers received the update:
+proc main =
+  var responses = newSeq[FlowVarBase](3)
+  for i in 0..2:
+    responses[i] = spawn tellServer(Update, "key", "value")
+  var index = blockUntilAny(responses)
+  assert index >= 0
+  responses.del(index)
+  discard blockUntilAny(responses)
+\end{verbatim}
+
+Data flow variables ensure that no data races are possible. Due to
+technical limitations not every type \texttt{T} is possible in a data
+flow variable: \texttt{T} has to be of the type \texttt{ref},
+\texttt{string}, \texttt{seq} or of a type that doesn't contain a type
+that is garbage collected. This restriction is not hard to work-around
+in practice.
+
+\hypertarget{parallel-statement}{%
+\subsubsection{Parallel statement}\label{parallel-statement}}
+
+Example:
+
+\begin{verbatim}
+# Compute PI in an inefficient way
+import strutils, math, threadpool
+{.experimental: "parallel".}
+
+proc term(k: float): float = 4 * math.pow(-1, k) / (2*k + 1)
+
+proc pi(n: int): float =
+  var ch = newSeq[float](n+1)
+  parallel:
+    for k in 0..ch.high:
+      ch[k] = spawn term(float(k))
+  for k in 0..ch.high:
+    result += ch[k]
+
+echo formatFloat(pi(5000))
+\end{verbatim}
+
+The parallel statement is the preferred mechanism to introduce
+parallelism in a Nim program. A subset of the Nim language is valid
+within a \texttt{parallel} section. This subset is checked during
+semantic analysis to be free of data races. A sophisticated
+\texttt{disjoint\ checker} ensures that no data races are possible even
+though shared memory is extensively supported!
+
+The subset is in fact the full language with the following restrictions
+/ changes:
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{spawn} within a \texttt{parallel} section has special
+  semantics.
+\item
+  Every location of the form \texttt{a{[}i{]}} and \texttt{a{[}i..j{]}}
+  and \texttt{dest} where \texttt{dest} is part of the pattern
+  \texttt{dest\ =\ spawn\ f(...)} has to be provably disjoint. This is
+  called the \emph{disjoint check}.
+\item
+  Every other complex location \texttt{loc} that is used in a spawned
+  proc (\texttt{spawn\ f(loc)}) has to be immutable for the duration of
+  the \texttt{parallel} section. This is called the \emph{immutability
+  check}. Currently it is not specified what exactly "complex location"
+  means. We need to make this an optimization!
+\item
+  Every array access has to be provably within bounds. This is called
+  the \emph{bounds check}.
+\item
+  Slices are optimized so that no copy is performed. This optimization
+  is not yet performed for ordinary slices outside of a
+  \texttt{parallel} section.
+\end{itemize}
+
+\hypertarget{guards-and-locks}{%
+\subsection{Guards and locks}\label{guards-and-locks}}
+
+Apart from \texttt{spawn} and \texttt{parallel} Nim also provides all
+the common low level concurrency mechanisms like locks, atomic
+intrinsics or condition variables.
+
+Nim significantly improves on the safety of these features via
+additional pragmas:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi})}
+\tightlist
+\item
+  A \texttt{guard} annotation is introduced to prevent data races.
+\item
+  Every access of a guarded memory location needs to happen in an
+  appropriate \texttt{locks} statement.
+\item
+  Locks and routines can be annotated with \texttt{lock\ levels} to
+  allow potential deadlocks to be detected during semantic analysis.
+\end{enumerate}
+
+\hypertarget{guards-and-the-locks-section}{%
+\subsubsection{Guards and the locks
+section}\label{guards-and-the-locks-section}}
+
+\hypertarget{protecting-global-variables}{%
+\paragraph{Protecting global
+variables}\label{protecting-global-variables}}
+
+Object fields and global variables can be annotated via a \texttt{guard}
+pragma:
+
+\begin{verbatim}
+\end{verbatim}
+
+The compiler then ensures that every access of \texttt{gdata} is within
+a \texttt{locks} section:
+
+\begin{verbatim}
+proc valid =
+  # valid access:
+  {.locks: [glock].}:
+    echo gdata
+\end{verbatim}
+
+Top level accesses to \texttt{gdata} are always allowed so that it can
+be initialized conveniently. It is \emph{assumed} (but not enforced)
+that every top level statement is executed before any concurrent action
+happens.
+
+The \texttt{locks} section deliberately looks ugly because it has no
+runtime semantics and should not be used directly! It should only be
+used in templates that also implement some form of locking at runtime:
+
+\begin{verbatim}
+\end{verbatim}
+
+The guard does not need to be of any particular type. It is flexible
+enough to model low level lockfree mechanisms:
+
+\begin{verbatim}
+template atomicRead(x): untyped =
+  {.locks: [dummyLock].}:
+    memoryReadBarrier()
+    x
+
+echo atomicRead(atomicCounter)
+\end{verbatim}
+
+The \texttt{locks} pragma takes a list of lock expressions
+\texttt{locks:\ {[}a,\ b,\ ...{]}} in order to support \emph{multi lock}
+statements. Why these are essential is explained in the
+\protect\hyperlink{guards-and-locks-lock-levels}{lock levels} section.
+
+\hypertarget{protecting-general-locations}{%
+\paragraph{Protecting general
+locations}\label{protecting-general-locations}}
+
+The \texttt{guard} annotation can also be used to protect fields within
+an object. The guard then needs to be another field within the same
+object or a global variable.
+
+Since objects can reside on the heap or on the stack this greatly
+enhances the expressivity of the language:
+
+\begin{verbatim}
+proc incCounters(counters: var openArray[ProtectedCounter]) =
+  for i in 0..counters.high:
+    lock counters[i].L:
+      inc counters[i].v
+\end{verbatim}
+
+The access to field \texttt{x.v} is allowed since its guard \texttt{x.L}
+is active. After template expansion, this amounts to:
+
+\begin{verbatim}
+\end{verbatim}
+
+There is an analysis that checks that \texttt{counters{[}i{]}.L} is the
+lock that corresponds to the protected location
+\texttt{counters{[}i{]}.v}. This analysis is called
+\texttt{path\ analysis} because it deals with paths to locations like
+\texttt{obj.field{[}i{]}.fieldB{[}j{]}}.
+
+The path analysis is \textbf{currently unsound}, but that doesn't make
+it useless. Two paths are considered equivalent if they are
+syntactically the same.
+
+This means the following compiles (for now) even though it really should
+not:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{lock-levels}{%
+\subsubsection{Lock levels}\label{lock-levels}}
+
+Lock levels are used to enforce a global locking order in order to
+detect potential deadlocks during semantic analysis. A lock level is an
+constant integer in the range 0..1\_000. Lock level 0 means that no lock
+is acquired at all.
+
+If a section of code holds a lock of level \texttt{M} than it can also
+acquire any lock of level \texttt{N\ \textless{}\ M}. Another lock of
+level \texttt{M} cannot be acquired. Locks of the same level can only be
+acquired \emph{at the same time} within a single \texttt{locks} section:
+
+\begin{verbatim}
+# invalid locking order: TLock[2] acquired before TLock[2]:
+{.locks: [a].}:
+  {.locks: [b].}:
+    ...
+
+# valid locking order, locks of the same level acquired at the same time:
+{.locks: [a, b].}:
+  ...
+\end{verbatim}
+
+Here is how a typical multilock statement can be implemented in Nim.
+Note how the runtime check is required to ensure a global ordering for
+two locks \texttt{a} and \texttt{b} of the same lock level:
+
+\begin{verbatim}
+\end{verbatim}
+
+Whole routines can also be annotated with a \texttt{locks} pragma that
+takes a lock level. This then means that the routine may acquire locks
+of up to this level. This is essential so that procs can be called
+within a \texttt{locks} section:
+
+\begin{verbatim}
+var a: TLock[4]
+{.locks: [a].}:
+  # p's locklevel (3) is strictly less than a's (4) so the call is allowed:
+  p()
+\end{verbatim}
+
+As usual \texttt{locks} is an inferred effect and there is a subtype
+relation: \texttt{proc\ ()\ \{.locks:\ N.\}} is a subtype of
+\texttt{proc\ ()\ \{.locks:\ M.\}} iff (M \textless= N).
+
+The \texttt{locks} pragma can also take the special value
+\texttt{"unknown"}. This is useful in the context of dynamic method
+dispatching. In the following example, the compiler can infer a lock
+level of 0 for the \texttt{base} case. However, one of the overloaded
+methods calls a procvar which is potentially locking. Thus, the lock
+level of calling \texttt{g.testMethod} cannot be inferred statically,
+leading to compiler warnings. By using \texttt{\{.locks:\ "unknown".\}},
+the base method can be marked explicitly as having unknown lock level as
+well:
+
+\begin{verbatim}
+method testMethod(g: SomeBase) {.base, locks: "unknown".} = discard
+method testMethod(g: SomeDerived) =
+  if g.memberProc != nil:
+    g.memberProc()
+\end{verbatim}
+
+\hypertarget{norewrite-pragma}{%
+\subsubsection{noRewrite pragma}\label{norewrite-pragma}}
+
+Term rewriting macros and templates are currently greedy and they will
+rewrite as long as there is a match. There was no way to ensure some
+rewrite happens only once, eg. when rewriting term to same term plus
+extra content.
+
+\texttt{noRewrite} pragma can actually prevent further rewriting on
+marked code, e.g. with given example \texttt{echo("ab")} will be
+rewritten just once:
+
+\begin{verbatim}
+echo "ab"
+\end{verbatim}
+
+\texttt{noRewrite} pragma can be useful to control term-rewriting macros
+recursion.
+
+\hypertarget{taint-mode}{%
+\subsection{Taint mode}\label{taint-mode}}
+
+The Nim compiler and most parts of the standard library support a taint
+mode. Input strings are declared with the \texttt{TaintedString} string
+type declared in the \texttt{system} module.
+
+If the taint mode is turned on (via the \texttt{-\/-taintMode:on}
+command line option) it is a distinct string type which helps to detect
+input validation errors:
+
+\begin{verbatim}
+\end{verbatim}
+
+If the taint mode is turned off, \texttt{TaintedString} is simply an
+alias for \texttt{string}.
+
+\hypertarget{aliasing-restrictions-in-parameter-passing}{%
+\subsection{Aliasing restrictions in parameter
+passing}\label{aliasing-restrictions-in-parameter-passing}}
+
+\textbf{Note}: The aliasing restrictions are currently not enforced by
+the implementation and need to be fleshed out further.
+
+"Aliasing" here means that the underlying storage locations overlap in
+memory at runtime. An "output parameter" is a parameter of type
+\texttt{var\ T}, an input parameter is any parameter that is not of type
+\texttt{var}.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Two output parameters should never be aliased.
+\item
+  An input and an output parameter should not be aliased.
+\item
+  An output parameter should never be aliased with a global or thread
+  local variable referenced by the called proc.
+\item
+  An input parameter should not be aliased with a global or thread local
+  variable updated by the called proc.
+\end{enumerate}
+
+One problem with rules 3 and 4 is that they affect specific global or
+thread local variables, but Nim's effect tracking only tracks "uses no
+global variable" via \texttt{.noSideEffect}. The rules 3 and 4 can also
+be approximated by a different rule:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  A global or thread local variable (or a location derived from such a
+  location) can only passed to a parameter of a \texttt{.noSideEffect}
+  proc.
+\end{enumerate}
+
+\hypertarget{strict-funcs}{%
+\subsection{Strict funcs}\label{strict-funcs}}
+
+Since version 1.4 a stricter definition of "side effect" is available.
+In addition to the existing rule that a side effect is calling a
+function with side effects the following rule is also enforced:
+
+Any mutation to an object does count as a side effect if that object is
+reachable via a parameter that is not declared as a \texttt{var}
+parameter.
+
+For example:
+
+\begin{verbatim}
+{.experimental: "strictFuncs".}
+
+type
+  Node = ref object
+    le, ri: Node
+    data: string
+
+func len(n: Node): int =
+  # valid: len does not have side effects
+  var it = n
+  while it != nil:
+    inc result
+    it = it.ri
+
+func mut(n: Node) =
+  let m = n # is the statement that connected the mutation to the parameter
+  m.data = "yeah" # the mutation is here
+  # Error: 'mut' can have side effects
+  # an object reachable from 'n' is potentially mutated
+\end{verbatim}
+
+The algorithm behind this analysis is currently not documented.

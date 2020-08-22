@@ -1,0 +1,235 @@
+\contentsline {section}{\numberline {1}About this document}{2}{section.1}%
+\contentsline {section}{\numberline {2}Definitions}{2}{section.2}%
+\contentsline {section}{\numberline {3}Lexical Analysis}{3}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Encoding}{3}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Indentation}{3}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Comments}{4}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Multiline comments}{4}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}Identifiers \& Keywords}{4}{subsection.3.5}%
+\contentsline {subsection}{\numberline {3.6}Identifier equality}{5}{subsection.3.6}%
+\contentsline {subsection}{\numberline {3.7}String literals}{5}{subsection.3.7}%
+\contentsline {subsection}{\numberline {3.8}Triple quoted string literals}{5}{subsection.3.8}%
+\contentsline {subsection}{\numberline {3.9}Raw string literals}{6}{subsection.3.9}%
+\contentsline {subsection}{\numberline {3.10}Generalized raw string literals}{6}{subsection.3.10}%
+\contentsline {subsection}{\numberline {3.11}Character literals}{7}{subsection.3.11}%
+\contentsline {subsection}{\numberline {3.12}Numerical constants}{7}{subsection.3.12}%
+\contentsline {subsection}{\numberline {3.13}Operators}{8}{subsection.3.13}%
+\contentsline {subsection}{\numberline {3.14}Other tokens}{8}{subsection.3.14}%
+\contentsline {section}{\numberline {4}Syntax}{9}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Associativity}{9}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Precedence}{9}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Grammar}{10}{subsection.4.3}%
+\contentsline {section}{\numberline {5}Order of evaluation}{13}{section.5}%
+\contentsline {section}{\numberline {6}Constants and Constant Expressions}{14}{section.6}%
+\contentsline {section}{\numberline {7}Restrictions on Compile-Time Execution}{15}{section.7}%
+\contentsline {section}{\numberline {8}Types}{15}{section.8}%
+\contentsline {subsection}{\numberline {8.1}Ordinal types}{15}{subsection.8.1}%
+\contentsline {subsection}{\numberline {8.2}Pre-defined integer types}{16}{subsection.8.2}%
+\contentsline {subsection}{\numberline {8.3}Subrange types}{17}{subsection.8.3}%
+\contentsline {subsection}{\numberline {8.4}Pre-defined floating point types}{17}{subsection.8.4}%
+\contentsline {subsection}{\numberline {8.5}Boolean type}{18}{subsection.8.5}%
+\contentsline {subsection}{\numberline {8.6}Character type}{18}{subsection.8.6}%
+\contentsline {subsection}{\numberline {8.7}Enumeration types}{18}{subsection.8.7}%
+\contentsline {subsection}{\numberline {8.8}String type}{19}{subsection.8.8}%
+\contentsline {subsection}{\numberline {8.9}cstring type}{20}{subsection.8.9}%
+\contentsline {subsection}{\numberline {8.10}Structured types}{20}{subsection.8.10}%
+\contentsline {subsection}{\numberline {8.11}Array and sequence types}{20}{subsection.8.11}%
+\contentsline {subsection}{\numberline {8.12}Open arrays}{21}{subsection.8.12}%
+\contentsline {subsection}{\numberline {8.13}Varargs}{22}{subsection.8.13}%
+\contentsline {subsection}{\numberline {8.14}Unchecked arrays}{22}{subsection.8.14}%
+\contentsline {subsection}{\numberline {8.15}Tuples and object types}{23}{subsection.8.15}%
+\contentsline {subsection}{\numberline {8.16}Object construction}{24}{subsection.8.16}%
+\contentsline {subsection}{\numberline {8.17}Object variants}{24}{subsection.8.17}%
+\contentsline {subsection}{\numberline {8.18}Set type}{25}{subsection.8.18}%
+\contentsline {subsubsection}{\numberline {8.18.1}Bit fields}{26}{subsubsection.8.18.1}%
+\contentsline {subsection}{\numberline {8.19}Reference and pointer types}{26}{subsection.8.19}%
+\contentsline {subsection}{\numberline {8.20}Mixing GC'ed memory with \texttt {ptr}}{28}{subsection.8.20}%
+\contentsline {subsection}{\numberline {8.21}Procedural type}{28}{subsection.8.21}%
+\contentsline {subsection}{\numberline {8.22}Distinct type}{29}{subsection.8.22}%
+\contentsline {subsubsection}{\numberline {8.22.1}Modelling currencies}{29}{subsubsection.8.22.1}%
+\contentsline {subsubsection}{\numberline {8.22.2}Avoiding SQL injection attacks}{31}{subsubsection.8.22.2}%
+\contentsline {subsection}{\numberline {8.23}Auto type}{31}{subsection.8.23}%
+\contentsline {section}{\numberline {9}Type relations}{32}{section.9}%
+\contentsline {subsection}{\numberline {9.1}Type equality}{32}{subsection.9.1}%
+\contentsline {subsection}{\numberline {9.2}Type equality modulo type distinction}{33}{subsection.9.2}%
+\contentsline {subsection}{\numberline {9.3}Subtype relation}{33}{subsection.9.3}%
+\contentsline {subsection}{\numberline {9.4}Convertible relation}{33}{subsection.9.4}%
+\contentsline {subsection}{\numberline {9.5}Assignment compatibility}{34}{subsection.9.5}%
+\contentsline {section}{\numberline {10}Overloading resolution}{34}{section.10}%
+\contentsline {subsection}{\numberline {10.1}Overloading based on 'var T' / 'out T'}{36}{subsection.10.1}%
+\contentsline {subsection}{\numberline {10.2}Lazy type resolution for untyped}{36}{subsection.10.2}%
+\contentsline {subsection}{\numberline {10.3}Varargs matching}{36}{subsection.10.3}%
+\contentsline {section}{\numberline {11}Statements and expressions}{37}{section.11}%
+\contentsline {subsection}{\numberline {11.1}Statement list expression}{37}{subsection.11.1}%
+\contentsline {subsection}{\numberline {11.2}Discard statement}{37}{subsection.11.2}%
+\contentsline {subsection}{\numberline {11.3}Void context}{37}{subsection.11.3}%
+\contentsline {subsection}{\numberline {11.4}Var statement}{38}{subsection.11.4}%
+\contentsline {subsection}{\numberline {11.5}Let statement}{38}{subsection.11.5}%
+\contentsline {subsection}{\numberline {11.6}Tuple unpacking}{39}{subsection.11.6}%
+\contentsline {subsection}{\numberline {11.7}Const section}{39}{subsection.11.7}%
+\contentsline {subsection}{\numberline {11.8}Static statement/expression}{39}{subsection.11.8}%
+\contentsline {subsection}{\numberline {11.9}If statement}{39}{subsection.11.9}%
+\contentsline {subsection}{\numberline {11.10}Case statement}{40}{subsection.11.10}%
+\contentsline {subsection}{\numberline {11.11}When statement}{41}{subsection.11.11}%
+\contentsline {subsection}{\numberline {11.12}When nimvm statement}{41}{subsection.11.12}%
+\contentsline {subsection}{\numberline {11.13}Return statement}{42}{subsection.11.13}%
+\contentsline {subsection}{\numberline {11.14}Yield statement}{42}{subsection.11.14}%
+\contentsline {subsection}{\numberline {11.15}Block statement}{42}{subsection.11.15}%
+\contentsline {subsection}{\numberline {11.16}Break statement}{42}{subsection.11.16}%
+\contentsline {subsection}{\numberline {11.17}While statement}{42}{subsection.11.17}%
+\contentsline {subsection}{\numberline {11.18}Continue statement}{43}{subsection.11.18}%
+\contentsline {subsection}{\numberline {11.19}Assembler statement}{43}{subsection.11.19}%
+\contentsline {subsection}{\numberline {11.20}Using statement}{43}{subsection.11.20}%
+\contentsline {subsection}{\numberline {11.21}If expression}{44}{subsection.11.21}%
+\contentsline {subsection}{\numberline {11.22}When expression}{44}{subsection.11.22}%
+\contentsline {subsection}{\numberline {11.23}Case expression}{44}{subsection.11.23}%
+\contentsline {subsection}{\numberline {11.24}Block expression}{44}{subsection.11.24}%
+\contentsline {subsection}{\numberline {11.25}Table constructor}{44}{subsection.11.25}%
+\contentsline {subsection}{\numberline {11.26}Type conversions}{45}{subsection.11.26}%
+\contentsline {subsection}{\numberline {11.27}Type casts}{45}{subsection.11.27}%
+\contentsline {subsection}{\numberline {11.28}The addr operator}{45}{subsection.11.28}%
+\contentsline {subsection}{\numberline {11.29}The unsafeAddr operator}{46}{subsection.11.29}%
+\contentsline {section}{\numberline {12}Procedures}{46}{section.12}%
+\contentsline {subsection}{\numberline {12.1}Export marker}{47}{subsection.12.1}%
+\contentsline {subsection}{\numberline {12.2}Method call syntax}{47}{subsection.12.2}%
+\contentsline {subsection}{\numberline {12.3}Properties}{47}{subsection.12.3}%
+\contentsline {subsection}{\numberline {12.4}Command invocation syntax}{48}{subsection.12.4}%
+\contentsline {subsection}{\numberline {12.5}Closures}{48}{subsection.12.5}%
+\contentsline {subsubsection}{\numberline {12.5.1}Creating closures in loops}{49}{subsubsection.12.5.1}%
+\contentsline {subsection}{\numberline {12.6}Anonymous Procs}{49}{subsection.12.6}%
+\contentsline {subsection}{\numberline {12.7}Func}{49}{subsection.12.7}%
+\contentsline {subsection}{\numberline {12.8}Nonoverloadable builtins}{49}{subsection.12.8}%
+\contentsline {subsection}{\numberline {12.9}Var parameters}{49}{subsection.12.9}%
+\contentsline {subsection}{\numberline {12.10}Var return type}{50}{subsection.12.10}%
+\contentsline {subsubsection}{\numberline {12.10.1}Future directions}{51}{subsubsection.12.10.1}%
+\contentsline {subsection}{\numberline {12.11}NRVO}{51}{subsection.12.11}%
+\contentsline {subsection}{\numberline {12.12}Overloading of the subscript operator}{52}{subsection.12.12}%
+\contentsline {section}{\numberline {13}Multi-methods}{52}{section.13}%
+\contentsline {subsection}{\numberline {13.1}Inhibit dynamic method resolution via procCall}{53}{subsection.13.1}%
+\contentsline {section}{\numberline {14}Iterators and the for statement}{53}{section.14}%
+\contentsline {subsection}{\numberline {14.1}Implicit items/pairs invocations}{53}{subsection.14.1}%
+\contentsline {subsection}{\numberline {14.2}First class iterators}{54}{subsection.14.2}%
+\contentsline {section}{\numberline {15}Converters}{55}{section.15}%
+\contentsline {section}{\numberline {16}Type sections}{56}{section.16}%
+\contentsline {section}{\numberline {17}Exception handling}{56}{section.17}%
+\contentsline {subsection}{\numberline {17.1}Try statement}{56}{subsection.17.1}%
+\contentsline {subsection}{\numberline {17.2}Try expression}{56}{subsection.17.2}%
+\contentsline {subsection}{\numberline {17.3}Except clauses}{57}{subsection.17.3}%
+\contentsline {subsection}{\numberline {17.4}Custom exceptions}{57}{subsection.17.4}%
+\contentsline {subsection}{\numberline {17.5}Defer statement}{57}{subsection.17.5}%
+\contentsline {subsection}{\numberline {17.6}Raise statement}{58}{subsection.17.6}%
+\contentsline {subsection}{\numberline {17.7}Exception hierarchy}{58}{subsection.17.7}%
+\contentsline {subsection}{\numberline {17.8}Imported exceptions}{58}{subsection.17.8}%
+\contentsline {section}{\numberline {18}Effect system}{59}{section.18}%
+\contentsline {subsection}{\numberline {18.1}Exception tracking}{59}{subsection.18.1}%
+\contentsline {subsection}{\numberline {18.2}Tag tracking}{60}{subsection.18.2}%
+\contentsline {subsection}{\numberline {18.3}Effects pragma}{60}{subsection.18.3}%
+\contentsline {section}{\numberline {19}Generics}{60}{section.19}%
+\contentsline {subsection}{\numberline {19.1}Is operator}{61}{subsection.19.1}%
+\contentsline {subsection}{\numberline {19.2}Type Classes}{62}{subsection.19.2}%
+\contentsline {subsection}{\numberline {19.3}Implicit generics}{62}{subsection.19.3}%
+\contentsline {subsection}{\numberline {19.4}Generic inference restrictions}{64}{subsection.19.4}%
+\contentsline {subsection}{\numberline {19.5}Symbol lookup in generics}{64}{subsection.19.5}%
+\contentsline {subsubsection}{\numberline {19.5.1}Open and Closed symbols}{64}{subsubsection.19.5.1}%
+\contentsline {subsection}{\numberline {19.6}Mixin statement}{64}{subsection.19.6}%
+\contentsline {subsection}{\numberline {19.7}Bind statement}{64}{subsection.19.7}%
+\contentsline {section}{\numberline {20}Templates}{65}{section.20}%
+\contentsline {subsection}{\numberline {20.1}Typed vs untyped parameters}{65}{subsection.20.1}%
+\contentsline {subsection}{\numberline {20.2}Passing a code block to a template}{66}{subsection.20.2}%
+\contentsline {subsection}{\numberline {20.3}Varargs of untyped}{66}{subsection.20.3}%
+\contentsline {subsection}{\numberline {20.4}Symbol binding in templates}{67}{subsection.20.4}%
+\contentsline {subsection}{\numberline {20.5}Identifier construction}{67}{subsection.20.5}%
+\contentsline {subsection}{\numberline {20.6}Lookup rules for template parameters}{67}{subsection.20.6}%
+\contentsline {subsection}{\numberline {20.7}Hygiene in templates}{68}{subsection.20.7}%
+\contentsline {subsection}{\numberline {20.8}Limitations of the method call syntax}{69}{subsection.20.8}%
+\contentsline {section}{\numberline {21}Macros}{69}{section.21}%
+\contentsline {subsection}{\numberline {21.1}Debug Example}{70}{subsection.21.1}%
+\contentsline {subsection}{\numberline {21.2}BindSym}{70}{subsection.21.2}%
+\contentsline {subsection}{\numberline {21.3}Case-Of Macro}{71}{subsection.21.3}%
+\contentsline {section}{\numberline {22}Special Types}{71}{section.22}%
+\contentsline {subsection}{\numberline {22.1}static\symbol {91}T\symbol {93}}{71}{subsection.22.1}%
+\contentsline {subsection}{\numberline {22.2}typedesc\symbol {91}T\symbol {93}}{72}{subsection.22.2}%
+\contentsline {subsection}{\numberline {22.3}typeof operator}{73}{subsection.22.3}%
+\contentsline {section}{\numberline {23}Modules}{73}{section.23}%
+\contentsline {subsubsection}{\numberline {23.0.1}Import statement}{74}{subsubsection.23.0.1}%
+\contentsline {subsubsection}{\numberline {23.0.2}Include statement}{74}{subsubsection.23.0.2}%
+\contentsline {subsubsection}{\numberline {23.0.3}Module names in imports}{75}{subsubsection.23.0.3}%
+\contentsline {subsubsection}{\numberline {23.0.4}Collective imports from a directory}{75}{subsubsection.23.0.4}%
+\contentsline {subsubsection}{\numberline {23.0.5}Pseudo import/include paths}{75}{subsubsection.23.0.5}%
+\contentsline {subsubsection}{\numberline {23.0.6}From import statement}{75}{subsubsection.23.0.6}%
+\contentsline {subsubsection}{\numberline {23.0.7}Export statement}{76}{subsubsection.23.0.7}%
+\contentsline {subsection}{\numberline {23.1}Scope rules}{76}{subsection.23.1}%
+\contentsline {subsubsection}{\numberline {23.1.1}Block scope}{76}{subsubsection.23.1.1}%
+\contentsline {subsubsection}{\numberline {23.1.2}Tuple or object scope}{76}{subsubsection.23.1.2}%
+\contentsline {subsubsection}{\numberline {23.1.3}Module scope}{76}{subsubsection.23.1.3}%
+\contentsline {section}{\numberline {24}Compiler Messages}{77}{section.24}%
+\contentsline {section}{\numberline {25}Pragmas}{77}{section.25}%
+\contentsline {subsection}{\numberline {25.1}deprecated pragma}{77}{subsection.25.1}%
+\contentsline {subsection}{\numberline {25.2}noSideEffect pragma}{77}{subsection.25.2}%
+\contentsline {subsection}{\numberline {25.3}compileTime pragma}{77}{subsection.25.3}%
+\contentsline {subsection}{\numberline {25.4}noReturn pragma}{78}{subsection.25.4}%
+\contentsline {subsection}{\numberline {25.5}acyclic pragma}{78}{subsection.25.5}%
+\contentsline {subsection}{\numberline {25.6}final pragma}{78}{subsection.25.6}%
+\contentsline {subsection}{\numberline {25.7}shallow pragma}{79}{subsection.25.7}%
+\contentsline {subsection}{\numberline {25.8}pure pragma}{79}{subsection.25.8}%
+\contentsline {subsection}{\numberline {25.9}asmNoStackFrame pragma}{79}{subsection.25.9}%
+\contentsline {subsection}{\numberline {25.10}error pragma}{79}{subsection.25.10}%
+\contentsline {subsection}{\numberline {25.11}fatal pragma}{79}{subsection.25.11}%
+\contentsline {subsection}{\numberline {25.12}warning pragma}{79}{subsection.25.12}%
+\contentsline {subsection}{\numberline {25.13}hint pragma}{79}{subsection.25.13}%
+\contentsline {subsection}{\numberline {25.14}line pragma}{80}{subsection.25.14}%
+\contentsline {subsection}{\numberline {25.15}linearScanEnd pragma}{80}{subsection.25.15}%
+\contentsline {subsection}{\numberline {25.16}computedGoto pragma}{80}{subsection.25.16}%
+\contentsline {subsection}{\numberline {25.17}immediate pragma}{81}{subsection.25.17}%
+\contentsline {subsection}{\numberline {25.18}compilation option pragmas}{81}{subsection.25.18}%
+\contentsline {subsection}{\numberline {25.19}push and pop pragmas}{81}{subsection.25.19}%
+\contentsline {subsection}{\numberline {25.20}register pragma}{82}{subsection.25.20}%
+\contentsline {subsection}{\numberline {25.21}global pragma}{82}{subsection.25.21}%
+\contentsline {subsection}{\numberline {25.22}Disabling certain messages}{82}{subsection.25.22}%
+\contentsline {subsection}{\numberline {25.23}used pragma}{82}{subsection.25.23}%
+\contentsline {subsection}{\numberline {25.24}experimental pragma}{83}{subsection.25.24}%
+\contentsline {section}{\numberline {26}Implementation Specific Pragmas}{83}{section.26}%
+\contentsline {subsection}{\numberline {26.1}Bitsize pragma}{83}{subsection.26.1}%
+\contentsline {subsection}{\numberline {26.2}Align pragma}{84}{subsection.26.2}%
+\contentsline {subsection}{\numberline {26.3}Volatile pragma}{84}{subsection.26.3}%
+\contentsline {subsection}{\numberline {26.4}NoDecl pragma}{84}{subsection.26.4}%
+\contentsline {subsection}{\numberline {26.5}Header pragma}{84}{subsection.26.5}%
+\contentsline {subsection}{\numberline {26.6}IncompleteStruct pragma}{85}{subsection.26.6}%
+\contentsline {subsection}{\numberline {26.7}Compile pragma}{85}{subsection.26.7}%
+\contentsline {subsection}{\numberline {26.8}Link pragma}{85}{subsection.26.8}%
+\contentsline {subsection}{\numberline {26.9}PassC pragma}{85}{subsection.26.9}%
+\contentsline {subsection}{\numberline {26.10}LocalPassc pragma}{85}{subsection.26.10}%
+\contentsline {subsection}{\numberline {26.11}PassL pragma}{85}{subsection.26.11}%
+\contentsline {subsection}{\numberline {26.12}Emit pragma}{86}{subsection.26.12}%
+\contentsline {subsection}{\numberline {26.13}ImportCpp pragma}{86}{subsection.26.13}%
+\contentsline {subsubsection}{\numberline {26.13.1}Namespaces}{87}{subsubsection.26.13.1}%
+\contentsline {subsubsection}{\numberline {26.13.2}Importcpp for enums}{87}{subsubsection.26.13.2}%
+\contentsline {subsubsection}{\numberline {26.13.3}Importcpp for procs}{87}{subsubsection.26.13.3}%
+\contentsline {subsubsection}{\numberline {26.13.4}Wrapping constructors}{88}{subsubsection.26.13.4}%
+\contentsline {subsubsection}{\numberline {26.13.5}Wrapping destructors}{88}{subsubsection.26.13.5}%
+\contentsline {subsubsection}{\numberline {26.13.6}Importcpp for objects}{88}{subsubsection.26.13.6}%
+\contentsline {subsection}{\numberline {26.14}ImportJs pragma}{89}{subsection.26.14}%
+\contentsline {subsection}{\numberline {26.15}ImportObjC pragma}{89}{subsection.26.15}%
+\contentsline {subsection}{\numberline {26.16}CodegenDecl pragma}{89}{subsection.26.16}%
+\contentsline {subsection}{\numberline {26.17}InjectStmt pragma}{90}{subsection.26.17}%
+\contentsline {subsection}{\numberline {26.18}compile time define pragmas}{90}{subsection.26.18}%
+\contentsline {section}{\numberline {27}User-defined pragmas}{90}{section.27}%
+\contentsline {subsection}{\numberline {27.1}pragma pragma}{90}{subsection.27.1}%
+\contentsline {subsection}{\numberline {27.2}Custom annotations}{90}{subsection.27.2}%
+\contentsline {subsection}{\numberline {27.3}Macro pragmas}{91}{subsection.27.3}%
+\contentsline {section}{\numberline {28}Foreign function interface}{92}{section.28}%
+\contentsline {subsection}{\numberline {28.1}Importc pragma}{92}{subsection.28.1}%
+\contentsline {subsection}{\numberline {28.2}Exportc pragma}{92}{subsection.28.2}%
+\contentsline {subsection}{\numberline {28.3}Extern pragma}{93}{subsection.28.3}%
+\contentsline {subsection}{\numberline {28.4}Bycopy pragma}{93}{subsection.28.4}%
+\contentsline {subsection}{\numberline {28.5}Byref pragma}{93}{subsection.28.5}%
+\contentsline {subsection}{\numberline {28.6}Varargs pragma}{93}{subsection.28.6}%
+\contentsline {subsection}{\numberline {28.7}Union pragma}{93}{subsection.28.7}%
+\contentsline {subsection}{\numberline {28.8}Packed pragma}{93}{subsection.28.8}%
+\contentsline {subsection}{\numberline {28.9}Dynlib pragma for import}{93}{subsection.28.9}%
+\contentsline {subsection}{\numberline {28.10}Dynlib pragma for export}{94}{subsection.28.10}%
+\contentsline {section}{\numberline {29}Threads}{94}{section.29}%
+\contentsline {subsection}{\numberline {29.1}Thread pragma}{95}{subsection.29.1}%
+\contentsline {subsection}{\numberline {29.2}GC safety}{95}{subsection.29.2}%
+\contentsline {subsection}{\numberline {29.3}Threadvar pragma}{95}{subsection.29.3}%
+\contentsline {subsection}{\numberline {29.4}Threads and exceptions}{95}{subsection.29.4}%

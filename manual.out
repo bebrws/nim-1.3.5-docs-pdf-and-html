@@ -1,0 +1,235 @@
+\BOOKMARK [1][-]{section.1}{About this document}{}% 1
+\BOOKMARK [1][-]{section.2}{Definitions}{}% 2
+\BOOKMARK [1][-]{section.3}{Lexical Analysis}{}% 3
+\BOOKMARK [2][-]{subsection.3.1}{Encoding}{section.3}% 4
+\BOOKMARK [2][-]{subsection.3.2}{Indentation}{section.3}% 5
+\BOOKMARK [2][-]{subsection.3.3}{Comments}{section.3}% 6
+\BOOKMARK [2][-]{subsection.3.4}{Multiline comments}{section.3}% 7
+\BOOKMARK [2][-]{subsection.3.5}{Identifiers \046 Keywords}{section.3}% 8
+\BOOKMARK [2][-]{subsection.3.6}{Identifier equality}{section.3}% 9
+\BOOKMARK [2][-]{subsection.3.7}{String literals}{section.3}% 10
+\BOOKMARK [2][-]{subsection.3.8}{Triple quoted string literals}{section.3}% 11
+\BOOKMARK [2][-]{subsection.3.9}{Raw string literals}{section.3}% 12
+\BOOKMARK [2][-]{subsection.3.10}{Generalized raw string literals}{section.3}% 13
+\BOOKMARK [2][-]{subsection.3.11}{Character literals}{section.3}% 14
+\BOOKMARK [2][-]{subsection.3.12}{Numerical constants}{section.3}% 15
+\BOOKMARK [2][-]{subsection.3.13}{Operators}{section.3}% 16
+\BOOKMARK [2][-]{subsection.3.14}{Other tokens}{section.3}% 17
+\BOOKMARK [1][-]{section.4}{Syntax}{}% 18
+\BOOKMARK [2][-]{subsection.4.1}{Associativity}{section.4}% 19
+\BOOKMARK [2][-]{subsection.4.2}{Precedence}{section.4}% 20
+\BOOKMARK [2][-]{subsection.4.3}{Grammar}{section.4}% 21
+\BOOKMARK [1][-]{section.5}{Order of evaluation}{}% 22
+\BOOKMARK [1][-]{section.6}{Constants and Constant Expressions}{}% 23
+\BOOKMARK [1][-]{section.7}{Restrictions on Compile-Time Execution}{}% 24
+\BOOKMARK [1][-]{section.8}{Types}{}% 25
+\BOOKMARK [2][-]{subsection.8.1}{Ordinal types}{section.8}% 26
+\BOOKMARK [2][-]{subsection.8.2}{Pre-defined integer types}{section.8}% 27
+\BOOKMARK [2][-]{subsection.8.3}{Subrange types}{section.8}% 28
+\BOOKMARK [2][-]{subsection.8.4}{Pre-defined floating point types}{section.8}% 29
+\BOOKMARK [2][-]{subsection.8.5}{Boolean type}{section.8}% 30
+\BOOKMARK [2][-]{subsection.8.6}{Character type}{section.8}% 31
+\BOOKMARK [2][-]{subsection.8.7}{Enumeration types}{section.8}% 32
+\BOOKMARK [2][-]{subsection.8.8}{String type}{section.8}% 33
+\BOOKMARK [2][-]{subsection.8.9}{cstring type}{section.8}% 34
+\BOOKMARK [2][-]{subsection.8.10}{Structured types}{section.8}% 35
+\BOOKMARK [2][-]{subsection.8.11}{Array and sequence types}{section.8}% 36
+\BOOKMARK [2][-]{subsection.8.12}{Open arrays}{section.8}% 37
+\BOOKMARK [2][-]{subsection.8.13}{Varargs}{section.8}% 38
+\BOOKMARK [2][-]{subsection.8.14}{Unchecked arrays}{section.8}% 39
+\BOOKMARK [2][-]{subsection.8.15}{Tuples and object types}{section.8}% 40
+\BOOKMARK [2][-]{subsection.8.16}{Object construction}{section.8}% 41
+\BOOKMARK [2][-]{subsection.8.17}{Object variants}{section.8}% 42
+\BOOKMARK [2][-]{subsection.8.18}{Set type}{section.8}% 43
+\BOOKMARK [3][-]{subsubsection.8.18.1}{Bit fields}{subsection.8.18}% 44
+\BOOKMARK [2][-]{subsection.8.19}{Reference and pointer types}{section.8}% 45
+\BOOKMARK [2][-]{subsection.8.20}{Mixing GC'ed memory with ptr}{section.8}% 46
+\BOOKMARK [2][-]{subsection.8.21}{Procedural type}{section.8}% 47
+\BOOKMARK [2][-]{subsection.8.22}{Distinct type}{section.8}% 48
+\BOOKMARK [3][-]{subsubsection.8.22.1}{Modelling currencies}{subsection.8.22}% 49
+\BOOKMARK [3][-]{subsubsection.8.22.2}{Avoiding SQL injection attacks}{subsection.8.22}% 50
+\BOOKMARK [2][-]{subsection.8.23}{Auto type}{section.8}% 51
+\BOOKMARK [1][-]{section.9}{Type relations}{}% 52
+\BOOKMARK [2][-]{subsection.9.1}{Type equality}{section.9}% 53
+\BOOKMARK [2][-]{subsection.9.2}{Type equality modulo type distinction}{section.9}% 54
+\BOOKMARK [2][-]{subsection.9.3}{Subtype relation}{section.9}% 55
+\BOOKMARK [2][-]{subsection.9.4}{Convertible relation}{section.9}% 56
+\BOOKMARK [2][-]{subsection.9.5}{Assignment compatibility}{section.9}% 57
+\BOOKMARK [1][-]{section.10}{Overloading resolution}{}% 58
+\BOOKMARK [2][-]{subsection.10.1}{Overloading based on 'var T' / 'out T'}{section.10}% 59
+\BOOKMARK [2][-]{subsection.10.2}{Lazy type resolution for untyped}{section.10}% 60
+\BOOKMARK [2][-]{subsection.10.3}{Varargs matching}{section.10}% 61
+\BOOKMARK [1][-]{section.11}{Statements and expressions}{}% 62
+\BOOKMARK [2][-]{subsection.11.1}{Statement list expression}{section.11}% 63
+\BOOKMARK [2][-]{subsection.11.2}{Discard statement}{section.11}% 64
+\BOOKMARK [2][-]{subsection.11.3}{Void context}{section.11}% 65
+\BOOKMARK [2][-]{subsection.11.4}{Var statement}{section.11}% 66
+\BOOKMARK [2][-]{subsection.11.5}{Let statement}{section.11}% 67
+\BOOKMARK [2][-]{subsection.11.6}{Tuple unpacking}{section.11}% 68
+\BOOKMARK [2][-]{subsection.11.7}{Const section}{section.11}% 69
+\BOOKMARK [2][-]{subsection.11.8}{Static statement/expression}{section.11}% 70
+\BOOKMARK [2][-]{subsection.11.9}{If statement}{section.11}% 71
+\BOOKMARK [2][-]{subsection.11.10}{Case statement}{section.11}% 72
+\BOOKMARK [2][-]{subsection.11.11}{When statement}{section.11}% 73
+\BOOKMARK [2][-]{subsection.11.12}{When nimvm statement}{section.11}% 74
+\BOOKMARK [2][-]{subsection.11.13}{Return statement}{section.11}% 75
+\BOOKMARK [2][-]{subsection.11.14}{Yield statement}{section.11}% 76
+\BOOKMARK [2][-]{subsection.11.15}{Block statement}{section.11}% 77
+\BOOKMARK [2][-]{subsection.11.16}{Break statement}{section.11}% 78
+\BOOKMARK [2][-]{subsection.11.17}{While statement}{section.11}% 79
+\BOOKMARK [2][-]{subsection.11.18}{Continue statement}{section.11}% 80
+\BOOKMARK [2][-]{subsection.11.19}{Assembler statement}{section.11}% 81
+\BOOKMARK [2][-]{subsection.11.20}{Using statement}{section.11}% 82
+\BOOKMARK [2][-]{subsection.11.21}{If expression}{section.11}% 83
+\BOOKMARK [2][-]{subsection.11.22}{When expression}{section.11}% 84
+\BOOKMARK [2][-]{subsection.11.23}{Case expression}{section.11}% 85
+\BOOKMARK [2][-]{subsection.11.24}{Block expression}{section.11}% 86
+\BOOKMARK [2][-]{subsection.11.25}{Table constructor}{section.11}% 87
+\BOOKMARK [2][-]{subsection.11.26}{Type conversions}{section.11}% 88
+\BOOKMARK [2][-]{subsection.11.27}{Type casts}{section.11}% 89
+\BOOKMARK [2][-]{subsection.11.28}{The addr operator}{section.11}% 90
+\BOOKMARK [2][-]{subsection.11.29}{The unsafeAddr operator}{section.11}% 91
+\BOOKMARK [1][-]{section.12}{Procedures}{}% 92
+\BOOKMARK [2][-]{subsection.12.1}{Export marker}{section.12}% 93
+\BOOKMARK [2][-]{subsection.12.2}{Method call syntax}{section.12}% 94
+\BOOKMARK [2][-]{subsection.12.3}{Properties}{section.12}% 95
+\BOOKMARK [2][-]{subsection.12.4}{Command invocation syntax}{section.12}% 96
+\BOOKMARK [2][-]{subsection.12.5}{Closures}{section.12}% 97
+\BOOKMARK [3][-]{subsubsection.12.5.1}{Creating closures in loops}{subsection.12.5}% 98
+\BOOKMARK [2][-]{subsection.12.6}{Anonymous Procs}{section.12}% 99
+\BOOKMARK [2][-]{subsection.12.7}{Func}{section.12}% 100
+\BOOKMARK [2][-]{subsection.12.8}{Nonoverloadable builtins}{section.12}% 101
+\BOOKMARK [2][-]{subsection.12.9}{Var parameters}{section.12}% 102
+\BOOKMARK [2][-]{subsection.12.10}{Var return type}{section.12}% 103
+\BOOKMARK [3][-]{subsubsection.12.10.1}{Future directions}{subsection.12.10}% 104
+\BOOKMARK [2][-]{subsection.12.11}{NRVO}{section.12}% 105
+\BOOKMARK [2][-]{subsection.12.12}{Overloading of the subscript operator}{section.12}% 106
+\BOOKMARK [1][-]{section.13}{Multi-methods}{}% 107
+\BOOKMARK [2][-]{subsection.13.1}{Inhibit dynamic method resolution via procCall}{section.13}% 108
+\BOOKMARK [1][-]{section.14}{Iterators and the for statement}{}% 109
+\BOOKMARK [2][-]{subsection.14.1}{Implicit items/pairs invocations}{section.14}% 110
+\BOOKMARK [2][-]{subsection.14.2}{First class iterators}{section.14}% 111
+\BOOKMARK [1][-]{section.15}{Converters}{}% 112
+\BOOKMARK [1][-]{section.16}{Type sections}{}% 113
+\BOOKMARK [1][-]{section.17}{Exception handling}{}% 114
+\BOOKMARK [2][-]{subsection.17.1}{Try statement}{section.17}% 115
+\BOOKMARK [2][-]{subsection.17.2}{Try expression}{section.17}% 116
+\BOOKMARK [2][-]{subsection.17.3}{Except clauses}{section.17}% 117
+\BOOKMARK [2][-]{subsection.17.4}{Custom exceptions}{section.17}% 118
+\BOOKMARK [2][-]{subsection.17.5}{Defer statement}{section.17}% 119
+\BOOKMARK [2][-]{subsection.17.6}{Raise statement}{section.17}% 120
+\BOOKMARK [2][-]{subsection.17.7}{Exception hierarchy}{section.17}% 121
+\BOOKMARK [2][-]{subsection.17.8}{Imported exceptions}{section.17}% 122
+\BOOKMARK [1][-]{section.18}{Effect system}{}% 123
+\BOOKMARK [2][-]{subsection.18.1}{Exception tracking}{section.18}% 124
+\BOOKMARK [2][-]{subsection.18.2}{Tag tracking}{section.18}% 125
+\BOOKMARK [2][-]{subsection.18.3}{Effects pragma}{section.18}% 126
+\BOOKMARK [1][-]{section.19}{Generics}{}% 127
+\BOOKMARK [2][-]{subsection.19.1}{Is operator}{section.19}% 128
+\BOOKMARK [2][-]{subsection.19.2}{Type Classes}{section.19}% 129
+\BOOKMARK [2][-]{subsection.19.3}{Implicit generics}{section.19}% 130
+\BOOKMARK [2][-]{subsection.19.4}{Generic inference restrictions}{section.19}% 131
+\BOOKMARK [2][-]{subsection.19.5}{Symbol lookup in generics}{section.19}% 132
+\BOOKMARK [3][-]{subsubsection.19.5.1}{Open and Closed symbols}{subsection.19.5}% 133
+\BOOKMARK [2][-]{subsection.19.6}{Mixin statement}{section.19}% 134
+\BOOKMARK [2][-]{subsection.19.7}{Bind statement}{section.19}% 135
+\BOOKMARK [1][-]{section.20}{Templates}{}% 136
+\BOOKMARK [2][-]{subsection.20.1}{Typed vs untyped parameters}{section.20}% 137
+\BOOKMARK [2][-]{subsection.20.2}{Passing a code block to a template}{section.20}% 138
+\BOOKMARK [2][-]{subsection.20.3}{Varargs of untyped}{section.20}% 139
+\BOOKMARK [2][-]{subsection.20.4}{Symbol binding in templates}{section.20}% 140
+\BOOKMARK [2][-]{subsection.20.5}{Identifier construction}{section.20}% 141
+\BOOKMARK [2][-]{subsection.20.6}{Lookup rules for template parameters}{section.20}% 142
+\BOOKMARK [2][-]{subsection.20.7}{Hygiene in templates}{section.20}% 143
+\BOOKMARK [2][-]{subsection.20.8}{Limitations of the method call syntax}{section.20}% 144
+\BOOKMARK [1][-]{section.21}{Macros}{}% 145
+\BOOKMARK [2][-]{subsection.21.1}{Debug Example}{section.21}% 146
+\BOOKMARK [2][-]{subsection.21.2}{BindSym}{section.21}% 147
+\BOOKMARK [2][-]{subsection.21.3}{Case-Of Macro}{section.21}% 148
+\BOOKMARK [1][-]{section.22}{Special Types}{}% 149
+\BOOKMARK [2][-]{subsection.22.1}{static91T93}{section.22}% 150
+\BOOKMARK [2][-]{subsection.22.2}{typedesc91T93}{section.22}% 151
+\BOOKMARK [2][-]{subsection.22.3}{typeof operator}{section.22}% 152
+\BOOKMARK [1][-]{section.23}{Modules}{}% 153
+\BOOKMARK [2][-]{subsubsection.23.0.1}{Import statement}{section.23}% 154
+\BOOKMARK [3][-]{subsubsection.23.0.2}{Include statement}{subsubsection.23.0.1}% 155
+\BOOKMARK [3][-]{subsubsection.23.0.3}{Module names in imports}{subsubsection.23.0.1}% 156
+\BOOKMARK [3][-]{subsubsection.23.0.4}{Collective imports from a directory}{subsubsection.23.0.1}% 157
+\BOOKMARK [3][-]{subsubsection.23.0.5}{Pseudo import/include paths}{subsubsection.23.0.1}% 158
+\BOOKMARK [3][-]{subsubsection.23.0.6}{From import statement}{subsubsection.23.0.1}% 159
+\BOOKMARK [3][-]{subsubsection.23.0.7}{Export statement}{subsubsection.23.0.1}% 160
+\BOOKMARK [2][-]{subsection.23.1}{Scope rules}{section.23}% 161
+\BOOKMARK [3][-]{subsubsection.23.1.1}{Block scope}{subsection.23.1}% 162
+\BOOKMARK [3][-]{subsubsection.23.1.2}{Tuple or object scope}{subsection.23.1}% 163
+\BOOKMARK [3][-]{subsubsection.23.1.3}{Module scope}{subsection.23.1}% 164
+\BOOKMARK [1][-]{section.24}{Compiler Messages}{}% 165
+\BOOKMARK [1][-]{section.25}{Pragmas}{}% 166
+\BOOKMARK [2][-]{subsection.25.1}{deprecated pragma}{section.25}% 167
+\BOOKMARK [2][-]{subsection.25.2}{noSideEffect pragma}{section.25}% 168
+\BOOKMARK [2][-]{subsection.25.3}{compileTime pragma}{section.25}% 169
+\BOOKMARK [2][-]{subsection.25.4}{noReturn pragma}{section.25}% 170
+\BOOKMARK [2][-]{subsection.25.5}{acyclic pragma}{section.25}% 171
+\BOOKMARK [2][-]{subsection.25.6}{final pragma}{section.25}% 172
+\BOOKMARK [2][-]{subsection.25.7}{shallow pragma}{section.25}% 173
+\BOOKMARK [2][-]{subsection.25.8}{pure pragma}{section.25}% 174
+\BOOKMARK [2][-]{subsection.25.9}{asmNoStackFrame pragma}{section.25}% 175
+\BOOKMARK [2][-]{subsection.25.10}{error pragma}{section.25}% 176
+\BOOKMARK [2][-]{subsection.25.11}{fatal pragma}{section.25}% 177
+\BOOKMARK [2][-]{subsection.25.12}{warning pragma}{section.25}% 178
+\BOOKMARK [2][-]{subsection.25.13}{hint pragma}{section.25}% 179
+\BOOKMARK [2][-]{subsection.25.14}{line pragma}{section.25}% 180
+\BOOKMARK [2][-]{subsection.25.15}{linearScanEnd pragma}{section.25}% 181
+\BOOKMARK [2][-]{subsection.25.16}{computedGoto pragma}{section.25}% 182
+\BOOKMARK [2][-]{subsection.25.17}{immediate pragma}{section.25}% 183
+\BOOKMARK [2][-]{subsection.25.18}{compilation option pragmas}{section.25}% 184
+\BOOKMARK [2][-]{subsection.25.19}{push and pop pragmas}{section.25}% 185
+\BOOKMARK [2][-]{subsection.25.20}{register pragma}{section.25}% 186
+\BOOKMARK [2][-]{subsection.25.21}{global pragma}{section.25}% 187
+\BOOKMARK [2][-]{subsection.25.22}{Disabling certain messages}{section.25}% 188
+\BOOKMARK [2][-]{subsection.25.23}{used pragma}{section.25}% 189
+\BOOKMARK [2][-]{subsection.25.24}{experimental pragma}{section.25}% 190
+\BOOKMARK [1][-]{section.26}{Implementation Specific Pragmas}{}% 191
+\BOOKMARK [2][-]{subsection.26.1}{Bitsize pragma}{section.26}% 192
+\BOOKMARK [2][-]{subsection.26.2}{Align pragma}{section.26}% 193
+\BOOKMARK [2][-]{subsection.26.3}{Volatile pragma}{section.26}% 194
+\BOOKMARK [2][-]{subsection.26.4}{NoDecl pragma}{section.26}% 195
+\BOOKMARK [2][-]{subsection.26.5}{Header pragma}{section.26}% 196
+\BOOKMARK [2][-]{subsection.26.6}{IncompleteStruct pragma}{section.26}% 197
+\BOOKMARK [2][-]{subsection.26.7}{Compile pragma}{section.26}% 198
+\BOOKMARK [2][-]{subsection.26.8}{Link pragma}{section.26}% 199
+\BOOKMARK [2][-]{subsection.26.9}{PassC pragma}{section.26}% 200
+\BOOKMARK [2][-]{subsection.26.10}{LocalPassc pragma}{section.26}% 201
+\BOOKMARK [2][-]{subsection.26.11}{PassL pragma}{section.26}% 202
+\BOOKMARK [2][-]{subsection.26.12}{Emit pragma}{section.26}% 203
+\BOOKMARK [2][-]{subsection.26.13}{ImportCpp pragma}{section.26}% 204
+\BOOKMARK [3][-]{subsubsection.26.13.1}{Namespaces}{subsection.26.13}% 205
+\BOOKMARK [3][-]{subsubsection.26.13.2}{Importcpp for enums}{subsection.26.13}% 206
+\BOOKMARK [3][-]{subsubsection.26.13.3}{Importcpp for procs}{subsection.26.13}% 207
+\BOOKMARK [3][-]{subsubsection.26.13.4}{Wrapping constructors}{subsection.26.13}% 208
+\BOOKMARK [3][-]{subsubsection.26.13.5}{Wrapping destructors}{subsection.26.13}% 209
+\BOOKMARK [3][-]{subsubsection.26.13.6}{Importcpp for objects}{subsection.26.13}% 210
+\BOOKMARK [2][-]{subsection.26.14}{ImportJs pragma}{section.26}% 211
+\BOOKMARK [2][-]{subsection.26.15}{ImportObjC pragma}{section.26}% 212
+\BOOKMARK [2][-]{subsection.26.16}{CodegenDecl pragma}{section.26}% 213
+\BOOKMARK [2][-]{subsection.26.17}{InjectStmt pragma}{section.26}% 214
+\BOOKMARK [2][-]{subsection.26.18}{compile time define pragmas}{section.26}% 215
+\BOOKMARK [1][-]{section.27}{User-defined pragmas}{}% 216
+\BOOKMARK [2][-]{subsection.27.1}{pragma pragma}{section.27}% 217
+\BOOKMARK [2][-]{subsection.27.2}{Custom annotations}{section.27}% 218
+\BOOKMARK [2][-]{subsection.27.3}{Macro pragmas}{section.27}% 219
+\BOOKMARK [1][-]{section.28}{Foreign function interface}{}% 220
+\BOOKMARK [2][-]{subsection.28.1}{Importc pragma}{section.28}% 221
+\BOOKMARK [2][-]{subsection.28.2}{Exportc pragma}{section.28}% 222
+\BOOKMARK [2][-]{subsection.28.3}{Extern pragma}{section.28}% 223
+\BOOKMARK [2][-]{subsection.28.4}{Bycopy pragma}{section.28}% 224
+\BOOKMARK [2][-]{subsection.28.5}{Byref pragma}{section.28}% 225
+\BOOKMARK [2][-]{subsection.28.6}{Varargs pragma}{section.28}% 226
+\BOOKMARK [2][-]{subsection.28.7}{Union pragma}{section.28}% 227
+\BOOKMARK [2][-]{subsection.28.8}{Packed pragma}{section.28}% 228
+\BOOKMARK [2][-]{subsection.28.9}{Dynlib pragma for import}{section.28}% 229
+\BOOKMARK [2][-]{subsection.28.10}{Dynlib pragma for export}{section.28}% 230
+\BOOKMARK [1][-]{section.29}{Threads}{}% 231
+\BOOKMARK [2][-]{subsection.29.1}{Thread pragma}{section.29}% 232
+\BOOKMARK [2][-]{subsection.29.2}{GC safety}{section.29}% 233
+\BOOKMARK [2][-]{subsection.29.3}{Threadvar pragma}{section.29}% 234
+\BOOKMARK [2][-]{subsection.29.4}{Threads and exceptions}{section.29}% 235

@@ -1,0 +1,67 @@
+\hypertarget{code-owners}{%
+\section{Code owners}\label{code-owners}}
+
+\hypertarget{subsystems-and-code-owners}{%
+\subsection{Subsystems and code
+owners}\label{subsystems-and-code-owners}}
+
+\emph{Note}: This list is incomplete, in doubt dom96 is responsible for
+the standard library, araq is responsible for the compiler.
+
+\hypertarget{compiler}{%
+\subsubsection{Compiler}\label{compiler}}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+subsystem & owner(s)\tabularnewline
+\midrule
+\endhead
+Parsing, Lexing & araq\tabularnewline
+Renderer & cooldome, araq\tabularnewline
+Order of passes & cooldome\tabularnewline
+Semantic Checking & araq\tabularnewline
+Virtual machine & jangko, GULPF, araq\tabularnewline
+Sempass2: effects tracking & cooldome, araq\tabularnewline
+type system, concepts & zahary\tabularnewline
+transf & cooldome, araq\tabularnewline
+semfold constant folding & araq\tabularnewline
+template instantiation & zahary, araq\tabularnewline
+term rewriting macros & cooldome, araq\tabularnewline
+closure iterators & yglukhov, araq\tabularnewline
+lambda lifting & yglukhov, araq\tabularnewline
+c, cpp codegen & lemonboy, araq\tabularnewline
+js codegen & yglukhov, lemonboy\tabularnewline
+alias analysis & araq\tabularnewline
+dfa, writetracking & araq\tabularnewline
+parallel, multithreading & araq\tabularnewline
+incremental & araq\tabularnewline
+sizeof computations & krux02\tabularnewline
+Exception handling & cooldome, araq\tabularnewline
+\bottomrule
+\end{longtable}
+
+\hypertarget{standard-library}{%
+\subsubsection{Standard library}\label{standard-library}}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+subsystem & owner(s)\tabularnewline
+\midrule
+\endhead
+async & dom96\tabularnewline
+strutils & araq\tabularnewline
+sequtils & dom96, araq\tabularnewline
+times & GULPF\tabularnewline
+os & dom96, araq\tabularnewline
+re & araq\tabularnewline
+nre & flaviu\tabularnewline
+math, fenv & krux02, cooldome\tabularnewline
+io & dom96\tabularnewline
+garbage collector & araq\tabularnewline
+Go garbage collector & stefantalpalaru\tabularnewline
+coroutines & Rokas Kupstys\tabularnewline
+collections & GULPF\tabularnewline
+parseopt & araq\tabularnewline
+json & dom96\tabularnewline
+\bottomrule
+\end{longtable}

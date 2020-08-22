@@ -1,0 +1,171 @@
+\hypertarget{nim-ide-integration-guide}{%
+\section{Nim IDE Integration Guide}\label{nim-ide-integration-guide}}
+
+\begin{description}
+\item[Author]
+Unknown
+\item[Version]
+1.3.5
+\end{description}
+
+Nim differs from many other compilers in that it is really fast, and
+being so fast makes it suited to provide external queries for text
+editors about the source code being written. Through the
+\texttt{nimsuggest} tool, any IDE can query a \texttt{.nim} source file
+and obtain useful information like definition of symbols or suggestions
+for completion.
+
+This document will guide you through the available options. If you want
+to look at practical examples of nimsuggest support you can look at the
+\href{https://github.com/Araq/Nim/wiki/Editor-Support}{various editor
+integrations} already available.
+
+\hypertarget{installation}{%
+\subsection{Installation}\label{installation}}
+
+Nimsuggest is part of Nim's core. Build it via:
+
+\begin{verbatim}
+koch nimsuggest
+\end{verbatim}
+
+\hypertarget{nimsuggest-invocation}{%
+\subsection{Nimsuggest invocation}\label{nimsuggest-invocation}}
+
+Run it via \texttt{nimsuggest\ -\/-stdin\ -\/-debug\ myproject.nim}.
+Nimsuggest is a server that takes queries that are related to
+\texttt{myproject}. There is some support so that you can throw random
+\texttt{.nim} files which are not part of \texttt{myproject} at
+Nimsuggest too, but usually the query refer to modules/files that are
+part of \texttt{myproject}.
+
+\texttt{-\/-stdin} means that Nimsuggest reads the query from
+\texttt{stdin}. This is great for testing things out and playing with it
+but for an editor communication via sockets is more reasonable so that
+is the default. It listens to port 6000 by default.
+
+\hypertarget{specifying-the-location-of-the-query}{%
+\subsubsection{Specifying the location of the
+query}\label{specifying-the-location-of-the-query}}
+
+Nimsuggest then waits for queries to process. A query consists of a
+cryptic 3 letter "command" \texttt{def} or \texttt{con} or \texttt{sug}
+or \texttt{use} followed by a location. A query location consists of:
+
+\begin{description}
+\item[\texttt{file.nim}]
+This is the name of the module or include file the query refers to.
+\item[\texttt{dirtyfile.nim}]
+This is optional.
+
+The \texttt{file} parameter is enough for static analysis, but IDEs tend
+to have \emph{unsaved buffers} where the user may still be in the middle
+of typing a line. In such situations the IDE can save the current
+contents to a temporary file and then use the \texttt{dirtyfile.nim}
+option to tell Nimsuggest that \texttt{foobar.nim} should be taken from
+\texttt{temporary/foobar.nim}.
+\item[\texttt{line}]
+An integer with the line you are going to query. For the compiler lines
+start at \textbf{1}.
+\item[\texttt{col}]
+An integer with the column you are going to query. For the compiler
+columns start at \textbf{0}.
+\end{description}
+
+\hypertarget{definitions}{%
+\subsubsection{Definitions}\label{definitions}}
+
+The \texttt{def} Nimsuggest command performs a query about the
+definition of a specific symbol. If available, Nimsuggest will answer
+with the type, source file, line/column information and other accessory
+data if available like a docstring. With this information an IDE can
+provide the typical \emph{Jump to definition} where a user puts the
+cursor on a symbol or uses the mouse to select it and is redirected to
+the place where the symbol is located.
+
+Since Nim is implemented in Nim, one of the nice things of this feature
+is that any user with an IDE supporting it can quickly jump around the
+standard library implementation and see exactly what a proc does,
+learning about the language and seeing real life examples of how to
+write/implement specific features.
+
+Nimsuggest will always answer with a single definition or none if it
+can't find any valid symbol matching the position of the query.
+
+\hypertarget{suggestions}{%
+\subsubsection{Suggestions}\label{suggestions}}
+
+The \texttt{sug} Nimsuggest command performs a query about possible
+completion symbols at some point in the file.
+
+The typical usage scenario for this option is to call it after the user
+has typed the dot character for
+\href{tut2.html\#object-oriented-programming-method-call-syntax}{the
+object oriented call syntax}. Nimsuggest will try to return the
+suggestions sorted first by scope (from innermost to outermost) and then
+by item name.
+
+\hypertarget{invocation-context}{%
+\subsubsection{Invocation context}\label{invocation-context}}
+
+The \texttt{con} Nimsuggest command is very similar to the suggestions
+command, but instead of being used after the user has typed a dot
+character, this one is meant to be used after the user has typed an
+opening brace to start typing parameters.
+
+\hypertarget{symbol-usages}{%
+\subsubsection{Symbol usages}\label{symbol-usages}}
+
+The \texttt{use} Nimsuggest command lists all usages of the symbol at a
+position. IDEs can use this to find all the places in the file where the
+symbol is used and offer the user to rename it in all places at the same
+time.
+
+For this kind of query the IDE will most likely ignore all the
+type/signature info provided by Nimsuggest and concentrate on the
+filename, line and column position of the multiple returned answers.
+
+\hypertarget{parsing-nimsuggest-output}{%
+\subsection{Parsing nimsuggest output}\label{parsing-nimsuggest-output}}
+
+Nimsuggest output is always returned on single lines separated by tab
+characters (\texttt{\textbackslash{}t}). The values of each column are:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Three characters indicating the type of returned answer (e.g.
+  \texttt{def} for definition, \texttt{sug} for suggestion, etc).
+\item
+  Type of the symbol. This can be \texttt{skProc}, \texttt{skLet}, and
+  just about any of the enums defined in the module
+  \texttt{compiler/ast.nim}.
+\item
+  Fully qualified path of the symbol. If you are querying a symbol
+  defined in the \texttt{proj.nim} file, this would have the form
+  \texttt{proj.symbolName}.
+\item
+  Type/signature. For variables and enums this will contain the type of
+  the symbol, for procs, methods and templates this will contain the
+  full unique signature (e.g. \texttt{proc\ (File)}).
+\item
+  Full path to the file containing the symbol.
+\item
+  Line where the symbol is located in the file. Lines start to count at
+  \textbf{1}.
+\item
+  Column where the symbol is located in the file. Columns start to count
+  at \textbf{0}.
+\item
+  Docstring for the symbol if available or the empty string. To
+  differentiate the docstring from end of answer, the docstring is
+  always provided enclosed in double quotes, and if the docstring spans
+  multiple lines, all following lines of the docstring will start with a
+  blank space to align visually with the starting quote.
+
+  Also, you won't find raw \texttt{\textbackslash{}n} characters
+  breaking the one answer per line format. Instead you will need to
+  parse sequences in the form \texttt{\textbackslash{}xHH}, where
+  \emph{HH} is a hexadecimal value (e.g. newlines generate the sequence
+  \texttt{\textbackslash{}x0A}).
+\end{enumerate}

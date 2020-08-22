@@ -1,0 +1,2012 @@
+\hypertarget{nim-tutorial-part-i}{%
+\section{Nim Tutorial (Part I)}\label{nim-tutorial-part-i}}
+
+\begin{description}
+\item[Author]
+Andreas Rumpf
+\item[Version]
+1.3.5
+\end{description}
+
+\hypertarget{introduction}{%
+\subsection{Introduction}\label{introduction}}
+
+This document is a tutorial for the programming language \emph{Nim}.
+This tutorial assumes that you are familiar with basic programming
+concepts like variables, types or statements but is kept very basic. The
+\href{manual.html}{manual} contains many more examples of the advanced
+language features. All code examples in this tutorial, as well as the
+ones found in the rest of Nim's documentation, follow the
+\href{nep1.html}{Nim style guide}.
+
+\hypertarget{the-first-program}{%
+\subsection{The first program}\label{the-first-program}}
+
+We start the tour with a modified "hello world" program:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\# This is a comment echo "What's your name? " var name: string =
+readLine(stdin) echo "Hi, ", name, "!"
+\end{quote}
+
+Save this code to the file "greetings.nim". Now compile and run it:
+
+\begin{verbatim}
+nim compile --run greetings.nim
+\end{verbatim}
+
+With the \texttt{-\/-run}
+\href{nimc.html\#compiler-usage-command-line-switches}{switch} Nim
+executes the file automatically after compilation. You can give your
+program command line arguments by appending them after the filename:
+
+\begin{verbatim}
+nim compile --run greetings.nim arg1 arg2
+\end{verbatim}
+
+Commonly used commands and switches have abbreviations, so you can also
+use:
+
+\begin{verbatim}
+nim c -r greetings.nim
+\end{verbatim}
+
+To compile a release version use:
+
+\begin{verbatim}
+nim c -d:release greetings.nim
+\end{verbatim}
+
+By default the Nim compiler generates a large amount of runtime checks
+aiming for your debugging pleasure. With \texttt{-d:release} some checks
+are \href{nimc.html\#compiler-usage-compile-time-symbols}{turned off and
+optimizations are turned on}.
+
+Though it should be pretty obvious what the program does, I will explain
+the syntax: statements which are not indented are executed when the
+program starts. Indentation is Nim's way of grouping statements.
+Indentation is done with spaces only, tabulators are not allowed.
+
+String literals are enclosed in double quotes. The \texttt{var}
+statement declares a new variable named \texttt{name} of type
+\texttt{string} with the value that is returned by the
+\href{io.html\#readLine,File}{readLine} procedure. Since the compiler
+knows that \href{io.html\#readLine,File}{readLine} returns a string, you
+can leave out the type in the declaration (this is called
+\texttt{local\ type
+inference}). So this will work too:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+var name = readLine(stdin)
+\end{quote}
+
+Note that this is basically the only form of type inference that exists
+in Nim: it is a good compromise between brevity and readability.
+
+The "hello world" program contains several identifiers that are already
+known to the compiler: \texttt{echo},
+\href{io.html\#readLine,File}{readLine}, etc. These built-ins are
+declared in the \href{system.html}{system} module which is implicitly
+imported by any other module.
+
+\hypertarget{lexical-elements}{%
+\subsection{Lexical elements}\label{lexical-elements}}
+
+Let us look at Nim's lexical elements in more detail: like other
+programming languages Nim consists of (string) literals, identifiers,
+keywords, comments, operators, and other punctuation marks.
+
+\hypertarget{string-and-character-literals}{%
+\subsubsection{String and character
+literals}\label{string-and-character-literals}}
+
+String literals are enclosed in double quotes; character literals in
+single quotes. Special characters are escaped with
+\texttt{\textbackslash{}}: \texttt{\textbackslash{}n} means newline,
+\texttt{\textbackslash{}t} means tabulator, etc. There are also
+\emph{raw} string literals:
+
+\begin{verbatim}
+\end{verbatim}
+
+In raw literals the backslash is not an escape character.
+
+The third and last way to write string literals are \emph{long string
+literals}. They are written with three quotes: \texttt{"""\ ...\ """};
+they can span over multiple lines and the \texttt{\textbackslash{}} is
+not an escape character either. They are very useful for embedding HTML
+code templates for example.
+
+\hypertarget{comments}{%
+\subsubsection{Comments}\label{comments}}
+
+Comments start anywhere outside a string or character literal with the
+hash character \texttt{\#}. Documentation comments start with
+\texttt{\#\#}:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\# A comment.
+
+var myVariable: int \#\# a documentation comment
+\end{quote}
+
+Documentation comments are tokens; they are only allowed at certain
+places in the input file as they belong to the syntax tree! This feature
+enables simpler documentation generators.
+
+Multiline comments are started with \texttt{\#{[}} and terminated with
+\texttt{{]}\#}. Multiline comments can also be nested.
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\#{[} You can have any Nim code text commented out inside this with no
+indentation restrictions. yes("May I ask a pointless question?") \#{[}
+Note: these can be nested!! {]}\# {]}\#
+\end{quote}
+
+\hypertarget{numbers}{%
+\subsubsection{Numbers}\label{numbers}}
+
+Numerical literals are written as in most other languages. As a special
+twist, underscores are allowed for better readability:
+\texttt{1\_000\_000} (one million). A number that contains a dot (or 'e'
+or 'E') is a floating point literal: \texttt{1.0e9} (one billion).
+Hexadecimal literals are prefixed with \texttt{0x}, binary literals with
+\texttt{0b} and octal literals with \texttt{0o}. A leading zero alone
+does not produce an octal.
+
+\hypertarget{the-var-statement}{%
+\subsection{The var statement}\label{the-var-statement}}
+
+The var statement declares a new local or global variable:
+
+\begin{verbatim}
+\end{verbatim}
+
+Indentation can be used after the \texttt{var} keyword to list a whole
+section of variables:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[var]
+x, y: int \# a comment can occur here too a, b, c: string
+\end{description}
+\end{quote}
+
+\hypertarget{the-assignment-statement}{%
+\subsection{The assignment statement}\label{the-assignment-statement}}
+
+The assignment statement assigns a new value to a variable or more
+generally to a storage location:
+
+\begin{verbatim}
+\end{verbatim}
+
+\texttt{=} is the \emph{assignment operator}. The assignment operator
+can be overloaded. You can declare multiple variables with a single
+assignment statement and all the variables will have the same value:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+var x, y = 3 \# assigns 3 to the variables {x} and {y} echo "x ", x \#
+outputs "x 3" echo "y ", y \# outputs "y 3" x = 42 \# changes {x} to 42
+without changing {y} echo "x ", x \# outputs "x 42" echo "y ", y \#
+outputs "y 3"
+\end{quote}
+
+Note that declaring multiple variables with a single assignment which
+calls a procedure can have unexpected results: the compiler will
+\emph{unroll} the assignments and end up calling the procedure several
+times. If the result of the procedure depends on side effects, your
+variables may end up having different values! For safety use side-effect
+free procedures if making multiple assignments.
+
+\hypertarget{constants}{%
+\subsection{Constants}\label{constants}}
+
+Constants are symbols which are bound to a value. The constant's value
+cannot change. The compiler must be able to evaluate the expression in a
+constant declaration at compile time:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+const x = "abc" \# the constant x contains the string "abc"
+\end{quote}
+
+Indentation can be used after the \texttt{const} keyword to list a whole
+section of constants:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[const]
+x = 1 \# a comment can occur here too y = 2 z = y + 5 \# computations
+are possible
+\end{description}
+\end{quote}
+
+\hypertarget{the-let-statement}{%
+\subsection{The let statement}\label{the-let-statement}}
+
+The \texttt{let} statement works like the \texttt{var} statement but the
+declared symbols are \emph{single assignment} variables: After the
+initialization their value cannot change:
+
+\begin{verbatim}
+\end{verbatim}
+
+The difference between \texttt{let} and \texttt{const} is: \texttt{let}
+introduces a variable that can not be re-assigned, \texttt{const} means
+"enforce compile time evaluation and put it into a data section":
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+let input = readLine(stdin) \# works
+\end{quote}
+
+\hypertarget{control-flow-statements}{%
+\subsection{Control flow statements}\label{control-flow-statements}}
+
+The greetings program consists of 3 statements that are executed
+sequentially. Only the most primitive programs can get away with that:
+branching and looping are needed too.
+
+\hypertarget{if-statement}{%
+\subsubsection{If statement}\label{if-statement}}
+
+The if statement is one way to branch the control flow:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+let name = readLine(stdin) if name == "": echo "Poor soul, you lost your
+name?" elif name == "name": echo "Very funny, your name is name." else:
+echo "Hi, ", name, "!"
+\end{quote}
+
+There can be zero or more \texttt{elif} parts, and the \texttt{else}
+part is optional. The keyword \texttt{elif} is short for
+\texttt{else\ if}, and is useful to avoid excessive indentation. (The
+\texttt{""} is the empty string. It contains no characters.)
+
+\hypertarget{case-statement}{%
+\subsubsection{Case statement}\label{case-statement}}
+
+Another way to branch is provided by the case statement. A case
+statement is a multi-branch:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+let name = readLine(stdin) case name of "": echo "Poor soul, you lost
+your name?" of "name": echo "Very funny, your name is name." of "Dave",
+"Frank": echo "Cool name!" else: echo "Hi, ", name, "!"
+\end{quote}
+
+As it can be seen, for an \texttt{of} branch a comma separated list of
+values is also allowed.
+
+The case statement can deal with integers, other ordinal types and
+strings. (What an ordinal type is will be explained soon.) For integers
+or other ordinal types value ranges are also possible:
+
+\begin{verbatim}
+echo "A number please: "
+let n = parseInt(readLine(stdin))
+case n
+of 0..2, 4..7: echo "The number is in the set: {0, 1, 2, 4, 5, 6, 7}"
+of 3, 8: echo "The number is 3 or 8"
+\end{verbatim}
+
+However, the above code does not compile: the reason is that you have to
+cover every value that \texttt{n} may contain, but the code only handles
+the values \texttt{0..8}. Since it is not very practical to list every
+other possible integer (though it is possible thanks to the range
+notation), we fix this by telling the compiler that for every other
+value nothing should be done:
+
+\begin{verbatim}
+\end{verbatim}
+
+The empty \protect\hyperlink{procedures-discard-statement}{discard
+statement} is a \emph{do nothing} statement. The compiler knows that a
+case statement with an else part cannot fail and thus the error
+disappears. Note that it is impossible to cover all possible string
+values: that is why string cases always need an \texttt{else} branch.
+
+In general the case statement is used for subrange types or enumerations
+where it is of great help that the compiler checks that you covered any
+possible value.
+
+\hypertarget{while-statement}{%
+\subsubsection{While statement}\label{while-statement}}
+
+The while statement is a simple looping construct:
+
+\begin{verbatim}
+echo "What's your name? "
+var name = readLine(stdin)
+while name == "":
+  echo "Please tell me your name: "
+  name = readLine(stdin)
+  # no ``var``, because we do not declare a new variable here
+\end{verbatim}
+
+The example uses a while loop to keep asking the users for their name,
+as long as the user types in nothing (only presses RETURN).
+
+\hypertarget{for-statement}{%
+\subsubsection{For statement}\label{for-statement}}
+
+The \texttt{for} statement is a construct to loop over any element an
+\emph{iterator} provides. The example uses the built-in
+\href{system.html\#countup.i,T,T,Positive}{countup} iterator:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+echo "Counting to ten: " for i in countup(1, 10): echo i \#
+-\/-\textgreater{} Outputs 1 2 3 4 5 6 7 8 9 10 on different lines
+\end{quote}
+
+The variable \texttt{i} is implicitly declared by the \texttt{for} loop
+and has the type \texttt{int}, because that is what
+\href{system.html\#countup.i,T,T,Positive}{countup} returns. \texttt{i}
+runs through the values 1, 2, .., 10. Each value is \texttt{echo}-ed.
+This code does the same:
+
+\begin{verbatim}
+\end{verbatim}
+
+Counting down can be achieved as easily (but is less often needed):
+
+\begin{verbatim}
+\end{verbatim}
+
+Since counting up occurs so often in programs, Nim also has a
+\href{system.html\#...i,T,T}{..} iterator that does the same:
+
+\begin{verbatim}
+\end{verbatim}
+
+Zero-indexed counting has two shortcuts \texttt{..\textless{}} and
+\texttt{..\ \^{}1} (\href{system.html\#\%5E.t\%2Cint}{backwards index
+operator}) to simplify counting to one less than the higher index:
+
+\begin{verbatim}
+\end{verbatim}
+
+or
+
+\begin{verbatim}
+\end{verbatim}
+
+or
+
+\begin{verbatim}
+\end{verbatim}
+
+Other useful iterators for collections (like arrays and sequences) are *
+\texttt{items} and \texttt{mitems}, which provides immutable and mutable
+elements respectively, and * \texttt{pairs} and \texttt{mpairs} which
+provides the element and an index number (immutable and mutable
+respectively)
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[for index, item in {[}"a","b"{]}.pairs:]
+echo item, " at index ", index
+\end{description}
+
+\# =\textgreater{} a at index 0 \# =\textgreater{} b at index 1
+\end{quote}
+
+\hypertarget{scopes-and-the-block-statement}{%
+\subsubsection{Scopes and the block
+statement}\label{scopes-and-the-block-statement}}
+
+Control flow statements have a feature not covered yet: they open a new
+scope. This means that in the following example, \texttt{x} is not
+accessible outside the loop:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[while false:]
+var x = "hi"
+\end{description}
+
+echo x \# does not work
+\end{quote}
+
+A while (for) statement introduces an implicit block. Identifiers are
+only visible within the block they have been declared. The
+\texttt{block} statement can be used to open a new block explicitly:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[block myblock:]
+var x = "hi"
+\end{description}
+
+echo x \# does not work either
+\end{quote}
+
+The block's \emph{label} (\texttt{myblock} in the example) is optional.
+
+\hypertarget{break-statement}{%
+\subsubsection{Break statement}\label{break-statement}}
+
+A block can be left prematurely with a \texttt{break} statement. The
+break statement can leave a \texttt{while}, \texttt{for}, or a
+\texttt{block} statement. It leaves the innermost construct, unless a
+label of a block is given:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[block myblock:]
+echo "entering block" while true: echo "looping" break \# leaves the
+loop, but not the block echo "still in block"
+\item[block myblock2:]
+echo "entering block" while true: echo "looping" break myblock2 \#
+leaves the block (and the loop) echo "still in block"
+\end{description}
+\end{quote}
+
+\hypertarget{continue-statement}{%
+\subsubsection{Continue statement}\label{continue-statement}}
+
+Like in many other programming languages, a \texttt{continue} statement
+starts the next iteration immediately:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[while true:]
+let x = readLine(stdin) if x == "": continue echo x
+\end{description}
+\end{quote}
+
+\hypertarget{when-statement}{%
+\subsubsection{When statement}\label{when-statement}}
+
+Example:
+
+\begin{verbatim}
+when system.hostOS == "windows":
+  echo "running on Windows!"
+elif system.hostOS == "linux":
+  echo "running on Linux!"
+elif system.hostOS == "macosx":
+  echo "running on Mac OS X!"
+else:
+  echo "unknown operating system"
+\end{verbatim}
+
+The \texttt{when} statement is almost identical to the \texttt{if}
+statement, but with these differences:
+
+\begin{itemize}
+\tightlist
+\item
+  Each condition must be a constant expression since it is evaluated by
+  the compiler.
+\item
+  The statements within a branch do not open a new scope.
+\item
+  The compiler checks the semantics and produces code \emph{only} for
+  the statements that belong to the first condition that evaluates to
+  \texttt{true}.
+\end{itemize}
+
+The \texttt{when} statement is useful for writing platform specific
+code, similar to the \texttt{\#ifdef} construct in the C programming
+language.
+
+\hypertarget{statements-and-indentation}{%
+\subsection{Statements and
+indentation}\label{statements-and-indentation}}
+
+Now that we covered the basic control flow statements, let's return to
+Nim indentation rules.
+
+In Nim there is a distinction between \emph{simple statements} and
+\emph{complex statements}. \emph{Simple statements} cannot contain other
+statements: Assignment, procedure calls or the \texttt{return} statement
+belong to the simple statements. \emph{Complex statements} like
+\texttt{if}, \texttt{when}, \texttt{for}, \texttt{while} can contain
+other statements. To avoid ambiguities, complex statements must always
+be indented, but single simple statements do not:
+
+\begin{verbatim}
+# indentation needed for nested if statement:
+if x:
+  if y:
+    y = false
+  else:
+    y = true
+
+# indentation needed, because two statements follow the condition:
+if x:
+  x = false
+  y = false
+\end{verbatim}
+
+\emph{Expressions} are parts of a statement which usually result in a
+value. The condition in an if statement is an example for an expression.
+Expressions can contain indentation at certain places for better
+readability:
+
+\begin{verbatim}
+if thisIsaLongCondition() and
+    thisIsAnotherLongCondition(1,
+       2, 3, 4):
+  x = true
+\end{verbatim}
+
+As a rule of thumb, indentation within expressions is allowed after
+operators, an open parenthesis and after commas.
+
+With parenthesis and semicolons \texttt{(;)} you can use statements
+where only an expression is allowed:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\# computes fac(4) at compile time: const fac4 = (var x = 1; for i in
+1..4: x *= i; x)
+\end{quote}
+
+\hypertarget{procedures}{%
+\subsection{Procedures}\label{procedures}}
+
+To define new commands like
+\href{system.html\#echo,varargs\%5Btyped,\%5D}{echo} and
+\href{io.html\#readLine,File}{readLine} in the examples, the concept of
+a {procedure} is needed. (Some languages call them \emph{methods} or
+\emph{functions}.) In Nim new procedures are defined with the
+\texttt{proc} keyword:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[proc yes(question: string): bool =]
+echo question, " (y/n)" while true: case readLine(stdin) of "y", "Y",
+"yes", "Yes": return true of "n", "N", "no", "No": return false else:
+echo "Please be clear: yes or no"
+\item[if yes("Should I delete all your important files?"):]
+echo "I'm sorry Dave, I'm afraid I can't do that."
+\item[else:]
+echo "I think you know what the problem is just as well as I do."
+\end{description}
+\end{quote}
+
+This example shows a procedure named \texttt{yes} that asks the user a
+\texttt{question} and returns true if they answered "yes" (or something
+similar) and returns false if they answered "no" (or something similar).
+A \texttt{return} statement leaves the procedure (and therefore the
+while loop) immediately. The \texttt{(question:\ string):\ bool} syntax
+describes that the procedure expects a parameter named \texttt{question}
+of type \texttt{string} and returns a value of type \texttt{bool}. The
+\texttt{bool} type is built-in: the only valid values for \texttt{bool}
+are \texttt{true} and \texttt{false}. The conditions in if or while
+statements must be of type \texttt{bool}.
+
+Some terminology: in the example \texttt{question} is called a (formal)
+\emph{parameter}, \texttt{"Should\ I..."} is called an \emph{argument}
+that is passed to this parameter.
+
+\hypertarget{result-variable}{%
+\subsubsection{Result variable}\label{result-variable}}
+
+A procedure that returns a value has an implicit \texttt{result}
+variable declared that represents the return value. A \texttt{return}
+statement with no expression is a shorthand for \texttt{return\ result}.
+The \texttt{result} value is always returned automatically at the end of
+a procedure if there is no \texttt{return} statement at the exit.
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[proc sumTillNegative(x: varargs{[}int{]}): int =]
+\begin{description}
+\item[for i in x:]
+\begin{description}
+\item[if i \textless{} 0:]
+return
+\end{description}
+
+result = result + i
+\end{description}
+\end{description}
+
+echo sumTillNegative() \# echos 0 echo sumTillNegative(3, 4, 5) \# echos
+12 echo sumTillNegative(3, 4 , -1 , 6) \# echos 7
+\end{quote}
+
+The \texttt{result} variable is already implicitly declared at the start
+of the function, so declaring it again with 'var result', for example,
+would shadow it with a normal variable of the same name. The result
+variable is also already initialised with the type's default value. Note
+that referential data types will be \texttt{nil} at the start of the
+procedure, and thus may require manual initialisation.
+
+\hypertarget{parameters}{%
+\subsubsection{Parameters}\label{parameters}}
+
+Parameters are immutable in the procedure body. By default, their value
+cannot be changed because this allows the compiler to implement
+parameter passing in the most efficient way. If a mutable variable is
+needed inside the procedure, it has to be declared with \texttt{var} in
+the procedure body. Shadowing the parameter name is possible, and
+actually an idiom:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[proc printSeq(s: seq, nprinted: int = -1) =]
+var nprinted = if nprinted == -1: s.len else: min(nprinted, s.len) for i
+in 0 ..\textless{} nprinted: echo s{[}i{]}
+\end{description}
+\end{quote}
+
+If the procedure needs to modify the argument for the caller, a
+\texttt{var} parameter can be used:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[proc divmod(a, b: int; res, remainder: var int) =]
+res = a div b \# integer division remainder = a mod b \# integer modulo
+operation
+\item[var]
+x, y: int
+\end{description}
+
+divmod(8, 5, x, y) \# modifies x and y echo x echo y
+\end{quote}
+
+In the example, \texttt{res} and \texttt{remainder} are {var
+parameters}. Var parameters can be modified by the procedure and the
+changes are visible to the caller. Note that the above example would
+better make use of a tuple as a return value instead of using var
+parameters.
+
+\hypertarget{discard-statement}{%
+\subsubsection{Discard statement}\label{discard-statement}}
+
+To call a procedure that returns a value just for its side effects and
+ignoring its return value, a \texttt{discard} statement \textbf{must} be
+used. Nim does not allow silently throwing away a return value:
+
+\begin{verbatim}
+\end{verbatim}
+
+The return value can be ignored implicitly if the called proc/iterator
+has been declared with the \texttt{discardable} pragma:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[proc p(x, y: int): int \{.discardable.\} =]
+return x + y
+\end{description}
+
+p(3, 4) \# now valid
+\end{quote}
+
+\hypertarget{named-arguments}{%
+\subsubsection{Named arguments}\label{named-arguments}}
+
+Often a procedure has many parameters and it is not clear in which order
+the parameters appear. This is especially true for procedures that
+construct a complex data type. Therefore the arguments to a procedure
+can be named, so that it is clear which argument belongs to which
+parameter:
+
+\begin{verbatim}
+var w = createWindow(show = true, title = "My Application",
+                     x = 0, y = 0, height = 600, width = 800)
+\end{verbatim}
+
+Now that we use named arguments to call \texttt{createWindow} the
+argument order does not matter anymore. Mixing named arguments with
+ordered arguments is also possible, but not very readable:
+
+\begin{verbatim}
+\end{verbatim}
+
+The compiler checks that each parameter receives exactly one argument.
+
+\hypertarget{default-values}{%
+\subsubsection{Default values}\label{default-values}}
+
+To make the \texttt{createWindow} proc easier to use it should provide
+{default values}; these are values that are used as arguments if the
+caller does not specify them:
+
+\begin{verbatim}
+var w = createWindow(title = "My Application", height = 600, width = 800)
+\end{verbatim}
+
+Now the call to \texttt{createWindow} only needs to set the values that
+differ from the defaults.
+
+Note that type inference works for parameters with default values; there
+is no need to write \texttt{title:\ string\ =\ "unknown"}, for example.
+
+\hypertarget{overloaded-procedures}{%
+\subsubsection{Overloaded procedures}\label{overloaded-procedures}}
+
+Nim provides the ability to overload procedures similar to C++:
+
+\begin{verbatim}
+proc toString(x: bool): string =
+  result =
+    if x: "yep"
+    else: "nope"
+
+assert toString(13) == "positive" # calls the toString(x: int) proc
+assert toString(true) == "yep"    # calls the toString(x: bool) proc
+\end{verbatim}
+
+(Note that \texttt{toString} is usually the \href{dollars.html}{\$}
+operator in Nim.) The compiler chooses the most appropriate proc for the
+\texttt{toString} calls. How this overloading resolution algorithm works
+exactly is not discussed here (it will be specified in the manual soon).
+However, it does not lead to nasty surprises and is based on a quite
+simple unification algorithm. Ambiguous calls are reported as errors.
+
+\hypertarget{operators}{%
+\subsubsection{Operators}\label{operators}}
+
+The Nim library makes heavy use of overloading - one reason for this is
+that each operator like \texttt{+} is just an overloaded proc. The
+parser lets you use operators in {infix notation} (\texttt{a\ +\ b}) or
+{prefix notation} (\texttt{+\ a}). An infix operator always receives two
+arguments, a prefix operator always one. (Postfix operators are not
+possible, because this would be ambiguous: does \texttt{a\ @\ @\ b} mean
+\texttt{(a)\ @\ (@b)} or \texttt{(a@)\ @\ (b)}? It always means
+\texttt{(a)\ @\ (@b)}, because there are no postfix operators in Nim.)
+
+Apart from a few built-in keyword operators such as \texttt{and},
+\texttt{or}, \texttt{not}, operators always consist of these characters:
+\texttt{+\ \ -\ \ *\ \ \textbackslash{}\ \ /\ \ \textless{}\ \ \textgreater{}\ \ =\ \ @\ \ \$\ \ \textasciitilde{}\ \ \&\ \ \%\ \ !\ \ ?\ \ \^{}\ \ .\ \ \textbar{}}
+
+User defined operators are allowed. Nothing stops you from defining your
+own \texttt{@!?+\textasciitilde{}} operator, but doing so may reduce
+readability.
+
+The operator's precedence is determined by its first character. The
+details can be found in the manual.
+
+To define a new operator enclose the operator in backticks
+"\texttt{":\ \ ..\ code-block::\ nim\ \ \ proc\ \textasciigrave{}\$\textasciigrave{}\ (x:\ myDataType):\ string\ =\ ...\ \ \ \#\ now\ the\ \$\ operator\ also\ works\ with\ myDataType,\ overloading\ resolution\ \ \ \#\ ensures\ that\ \$\ works\ for\ built-in\ types\ just\ like\ before\ \ The\ "}"
+notation can also be used to call an operator just like any other
+procedure:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+if {==}( {+}(3, 4), 7): echo "True"
+\end{quote}
+
+\hypertarget{forward-declarations}{%
+\subsubsection{Forward declarations}\label{forward-declarations}}
+
+Every variable, procedure, etc. needs to be declared before it can be
+used. (The reason for this is that it is non-trivial to avoid this need
+in a language that supports meta programming as extensively as Nim
+does.) However, this cannot be done for mutually recursive procedures:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{verbatim}
+proc even(n: int): bool =
+  assert(n >= 0) # makes sure we don't run into negative recursion
+  if n == 1: false
+  else:
+    n == 0 or odd(n-1)
+\end{verbatim}
+
+Here \texttt{odd} depends on \texttt{even} and vice versa. Thus
+\texttt{even} needs to be introduced to the compiler before it is
+completely defined. The syntax for such a forward declaration is simple:
+just omit the \texttt{=} and the procedure's body. The \texttt{assert}
+just adds border conditions, and will be covered later in
+\protect\hyperlink{modules}{Modules} section.
+
+Later versions of the language will weaken the requirements for forward
+declarations.
+
+The example also shows that a proc's body can consist of a single
+expression whose value is then returned implicitly.
+
+\hypertarget{iterators}{%
+\subsection{Iterators}\label{iterators}}
+
+Let's return to the simple counting example:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+echo "Counting to ten: " for i in countup(1, 10): echo i
+\end{quote}
+
+Can a \href{system.html\#countup.i,T,T,Positive}{countup} proc be
+written that supports this loop? Lets try:
+
+\begin{verbatim}
+\end{verbatim}
+
+However, this does not work. The problem is that the procedure should
+not only \texttt{return}, but return and \textbf{continue} after an
+iteration has finished. This \emph{return and continue} is called a
+{yield} statement. Now the only thing left to do is to replace the
+\texttt{proc} keyword by \texttt{iterator} and here it is - our first
+iterator:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[iterator countup(a, b: int): int =]
+var res = a while res \textless= b: yield res inc(res)
+\end{description}
+\end{quote}
+
+Iterators look very similar to procedures, but there are several
+important differences:
+
+\begin{itemize}
+\tightlist
+\item
+  Iterators can only be called from for loops.
+\item
+  Iterators cannot contain a \texttt{return} statement (and procs cannot
+  contain a \texttt{yield} statement).
+\item
+  Iterators have no implicit \texttt{result} variable.
+\item
+  Iterators do not support recursion.
+\item
+  Iterators cannot be forward declared, because the compiler must be
+  able to inline an iterator. (This restriction will be gone in a future
+  version of the compiler.)
+\end{itemize}
+
+However, you can also use a \texttt{closure} iterator to get a different
+set of restrictions. See
+\href{manual.html\#iterators-and-the-for-statement-first-class-iterators}{first
+class iterators} for details. Iterators can have the same name and
+parameters as a proc, since essentially they have their own namespaces.
+Therefore it is common practice to wrap iterators in procs of the same
+name which accumulate the result of the iterator and return it as a
+sequence, like \texttt{split} from the \href{strutils.html}{strutils
+module}.
+
+\hypertarget{basic-types}{%
+\subsection{Basic types}\label{basic-types}}
+
+This section deals with the basic built-in types and the operations that
+are available for them in detail.
+
+\hypertarget{booleans}{%
+\subsubsection{Booleans}\label{booleans}}
+
+Nim's boolean type is called \texttt{bool} and consists of the two
+pre-defined values \texttt{true} and \texttt{false}. Conditions in
+while, if, elif, and when statements must be of type bool.
+
+The operators
+\texttt{not,\ and,\ or,\ xor,\ \textless{},\ \textless{}=,\ \textgreater{},\ \textgreater{}=,\ !=,\ ==}
+are defined for the bool type. The \texttt{and} and \texttt{or}
+operators perform short-circuit evaluation. For example:
+
+\begin{verbatim}
+while p != nil and p.name != "xyz":
+  # p.name is not evaluated if p == nil
+  p = p.next
+\end{verbatim}
+
+\hypertarget{characters}{%
+\subsubsection{Characters}\label{characters}}
+
+The {character type} is called \texttt{char}. Its size is always one
+byte, so it cannot represent most UTF-8 characters; but it \emph{can}
+represent one of the bytes that makes up a multi-byte UTF-8 character.
+The reason for this is efficiency: for the overwhelming majority of
+use-cases, the resulting programs will still handle UTF-8 properly as
+UTF-8 was specially designed for this. Character literals are enclosed
+in single quotes.
+
+Chars can be compared with the \texttt{==}, \texttt{\textless{}},
+\texttt{\textless{}=}, \texttt{\textgreater{}}, \texttt{\textgreater{}=}
+operators. The \texttt{\$} operator converts a \texttt{char} to a
+\texttt{string}. Chars cannot be mixed with integers; to get the ordinal
+value of a \texttt{char} use the \texttt{ord} proc. Converting from an
+integer to a \texttt{char} is done with the \texttt{chr} proc.
+
+\hypertarget{strings}{%
+\subsubsection{Strings}\label{strings}}
+
+String variables are \textbf{mutable}, so appending to a string is
+possible, and quite efficient. Strings in Nim are both zero-terminated
+and have a length field. A string's length can be retrieved with the
+builtin \texttt{len} procedure; the length never counts the terminating
+zero. Accessing the terminating zero is an error, it only exists so that
+a Nim string can be converted to a \texttt{cstring} without doing a
+copy.
+
+The assignment operator for strings copies the string. You can use the
+\texttt{\&} operator to concatenate strings and \texttt{add} to append
+to a string.
+
+Strings are compared using their lexicographical order. All the
+comparison operators are supported. By convention, all strings are UTF-8
+encoded, but this is not enforced. For example, when reading strings
+from binary files, they are merely a sequence of bytes. The index
+operation \texttt{s{[}i{]}} means the i-th \emph{char} of \texttt{s},
+not the i-th \emph{unichar}.
+
+A string variable is initialized with the empty string \texttt{""}.
+
+\hypertarget{integers}{%
+\subsubsection{Integers}\label{integers}}
+
+Nim has these integer types built-in:
+\texttt{int\ int8\ int16\ int32\ int64\ uint\ uint8\ uint16\ uint32\ uint64}.
+
+The default integer type is \texttt{int}. Integer literals can have a
+\emph{type suffix} to specify a non-default integer type:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[let]
+x = 0 \# x is of type \texttt{int} y = 0'i8 \# y is of type
+\texttt{int8} z = 0'i64 \# z is of type \texttt{int64} u = 0'u \# u is
+of type \texttt{uint}
+\end{description}
+\end{quote}
+
+Most often integers are used for counting objects that reside in memory,
+so \texttt{int} has the same size as a pointer.
+
+The common operators
+\texttt{+\ -\ *\ div\ mod\ \ \textless{}\ \ \textless{}=\ \ ==\ \ !=\ \ \textgreater{}\ \ \textgreater{}=}
+are defined for integers. The \texttt{and\ or\ xor\ not} operators are
+also defined for integers, and provide \emph{bitwise} operations. Left
+bit shifting is done with the \texttt{shl}, right shifting with the
+\texttt{shr} operator. Bit shifting operators always treat their
+arguments as \emph{unsigned}. For \texttt{arithmetic\ bit\ shifts}
+ordinary multiplication or division can be used.
+
+Unsigned operations all wrap around; they cannot lead to over- or
+under-flow errors.
+
+Lossless \texttt{Automatic\ type\ conversion} is performed in
+expressions where different kinds of integer types are used. However, if
+the type conversion would cause loss of information, the
+\texttt{EOutOfRange} exception is raised (if the error cannot be
+detected at compile time).
+
+\hypertarget{floats}{%
+\subsubsection{Floats}\label{floats}}
+
+Nim has these floating point types built-in:
+\texttt{float\ float32\ float64}.
+
+The default float type is \texttt{float}. In the current implementation,
+\texttt{float} is always 64-bits.
+
+Float literals can have a \emph{type suffix} to specify a non-default
+float type:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[var]
+x = 0.0 \# x is of type \texttt{float} y = 0.0'f32 \# y is of type
+\texttt{float32} z = 0.0'f64 \# z is of type \texttt{float64}
+\end{description}
+\end{quote}
+
+The common operators
+\texttt{+\ -\ *\ /\ \ \textless{}\ \ \textless{}=\ \ ==\ \ !=\ \ \textgreater{}\ \ \textgreater{}=}
+are defined for floats and follow the IEEE-754 standard.
+
+Automatic type conversion in expressions with different kinds of
+floating point types is performed: the smaller type is converted to the
+larger. Integer types are \textbf{not} converted to floating point types
+automatically, nor vice versa. Use the
+\href{system.html\#toInt,float}{toInt} and
+\href{system.html\#toFloat,int}{toFloat} procs for these conversions.
+
+\hypertarget{type-conversion}{%
+\subsubsection{Type Conversion}\label{type-conversion}}
+
+Conversion between numerical types is performed by using the type as a
+function:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[var]
+x: int32 = 1.int32 \# same as calling int32(1) y: int8 = int8('a') \#
+'a' == 97'i8 z: float = 2.5 \# int(2.5) rounds down to 2 sum: int =
+int(x) + int(y) + int(z) \# sum == 100
+\end{description}
+\end{quote}
+
+\hypertarget{internal-type-representation}{%
+\subsection{Internal type
+representation}\label{internal-type-representation}}
+
+As mentioned earlier, the built-in \href{dollars.html}{\$} (stringify)
+operator turns any basic type into a string, which you can then print to
+the console using the \texttt{echo} proc. However, advanced types, and
+your own custom types, won't work with the \texttt{\$} operator until
+you define it for them. Sometimes you just want to debug the current
+value of a complex type without having to write its \texttt{\$}
+operator. You can use then the \href{system.html\#repr,T}{repr} proc
+which works with any type and even complex data graphs with cycles. The
+following example shows that even for basic types there is a difference
+between the \texttt{\$} and \texttt{repr} outputs:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[var]
+myBool = true myCharacter = 'n' myString = "nim" myInteger = 42 myFloat
+= 3.14
+\end{description}
+
+echo myBool, ":", repr(myBool) \# -\/-\textgreater{} true:true echo
+myCharacter, ":", repr(myCharacter) \# -\/-\textgreater{} n:'n' echo
+myString, ":", repr(myString) \# -\/-\textgreater{} nim:0x10fa8c050"nim"
+echo myInteger, ":", repr(myInteger) \# -\/-\textgreater{} 42:42 echo
+myFloat, ":", repr(myFloat) \# -\/-\textgreater{}
+3.1400000000000001e+00:3.1400000000000001e+00
+\end{quote}
+
+\hypertarget{advanced-types}{%
+\subsection{Advanced types}\label{advanced-types}}
+
+In Nim new types can be defined within a \texttt{type} statement:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[type]
+biggestInt = int64 \# biggest integer type that is available
+biggestFloat = float64 \# biggest float type that is available
+\end{description}
+\end{quote}
+
+Enumeration and object types may only be defined within a \texttt{type}
+statement.
+
+\hypertarget{enumerations}{%
+\subsubsection{Enumerations}\label{enumerations}}
+
+A variable of an enumeration type can only be assigned one of the
+enumeration's specified values. These values are a set of ordered
+symbols. Each symbol is mapped to an integer value internally. The first
+symbol is represented at runtime by 0, the second by 1 and so on. For
+example:
+
+\begin{verbatim}
+type
+  Direction = enum
+    north, east, south, west
+
+var x = south     # `x` is of type `Direction`; its value is `south`
+echo x            # writes "south" to `stdout`
+\end{verbatim}
+
+All the comparison operators can be used with enumeration types.
+
+An enumeration's symbol can be qualified to avoid ambiguities:
+\texttt{Direction.south}.
+
+The \texttt{\$} operator can convert any enumeration value to its name,
+and the \texttt{ord} proc can convert it to its underlying integer
+value.
+
+For better interfacing to other programming languages, the symbols of
+enum types can be assigned an explicit ordinal value. However, the
+ordinal values must be in ascending order.
+
+\hypertarget{ordinal-types}{%
+\subsubsection{Ordinal types}\label{ordinal-types}}
+
+Enumerations, integer types, \texttt{char} and \texttt{bool} (and
+subranges) are called ordinal types. Ordinal types have quite a few
+special operations:
+
+-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-
+-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-Operation
+Comment -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-
+-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\texttt{ord(x)}
+returns the integer value that is used to represent {x}'s value
+\texttt{inc(x)} increments {x} by one \texttt{inc(x,\ n)} increments {x}
+by {n}; {n} is an integer \texttt{dec(x)} decrements {x} by one
+\texttt{dec(x,\ n)} decrements {x} by {n}; {n} is an integer
+\texttt{succ(x)} returns the successor of {x} \texttt{succ(x,\ n)}
+returns the {n}'th successor of {x} \texttt{pred(x)} returns the
+predecessor of {x} \texttt{pred(x,\ n)} returns the {n}'th predecessor
+of {x} -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-
+-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-
+
+The \href{system.html\#inc,T,int}{inc},
+\href{system.html\#dec,T,int}{dec}, \href{system.html\#succ,T,int}{succ}
+and \href{system.html\#pred,T,int}{pred} operations can fail by raising
+an {EOutOfRange} or {EOverflow} exception. (If the code has been
+compiled with the proper runtime checks turned on.)
+
+\hypertarget{subranges}{%
+\subsubsection{Subranges}\label{subranges}}
+
+A subrange type is a range of values from an integer or enumeration type
+(the base type). Example:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[type]
+MySubrange = range{[}0..5{]}
+\end{description}
+\end{quote}
+
+\texttt{MySubrange} is a subrange of \texttt{int} which can only hold
+the values 0 to 5. Assigning any other value to a variable of type
+\texttt{MySubrange} is a compile-time or runtime error. Assignments from
+the base type to one of its subrange types (and vice versa) are allowed.
+
+The \texttt{system} module defines the important
+\href{system.html\#Natural}{Natural} type as
+\texttt{range{[}0..high(int){]}}
+(\href{system.html\#high,typedesc\%5BT\%5D}{high} returns the maximal
+value). Other programming languages may suggest the use of unsigned
+integers for natural numbers. This is often \textbf{unwise}: you don't
+want unsigned arithmetic (which wraps around) just because the numbers
+cannot be negative. Nim's \texttt{Natural} type helps to avoid this
+common programming error.
+
+\hypertarget{sets}{%
+\subsubsection{Sets}\label{sets}}
+
+The set type models the mathematical notion of a set. The set's basetype
+can only be an ordinal type of a certain size, namely:
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{int8}-\texttt{int16}
+\item
+  \texttt{uint8}/\texttt{byte}-\texttt{uint16}
+\item
+  \texttt{char}
+\item
+  \texttt{enum}
+\end{itemize}
+
+or equivalent. For signed integers the set's base type is defined to be
+in the range \texttt{0\ ..\ MaxSetElements-1} where
+\texttt{MaxSetElements} is currently always 2\^{}16.
+
+The reason is that sets are implemented as high performance bit vectors.
+Attempting to declare a set with a larger type will result in an error:
+
+\begin{verbatim}
+var s: set[int64] # Error: set is too large
+\end{verbatim}
+
+Sets can be constructed via the set constructor: \texttt{\{\}} is the
+empty set. The empty set is type compatible with any concrete set type.
+The constructor can also be used to include elements (and ranges of
+elements):
+
+\begin{verbatim}
+\end{verbatim}
+
+These operations are supported by sets:
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+operation & meaning\tabularnewline
+\midrule
+\endhead
+\texttt{A\ +\ B} & union of two sets\tabularnewline
+\texttt{A\ *\ B} & intersection of two sets\tabularnewline
+\texttt{A\ -\ B} & difference of two sets (A without B's
+elements)\tabularnewline
+\texttt{A\ ==\ B} & set equality\tabularnewline
+\texttt{A\ \textless{}=\ B} & subset relation (A is subset of B or equal
+to B)\tabularnewline
+\texttt{A\ \textless{}\ B} & strict subset relation (A is a proper
+subset of B)\tabularnewline
+\texttt{e\ in\ A} & set membership (A contains element e)\tabularnewline
+\texttt{e\ notin\ A} & A does not contain element e\tabularnewline
+\texttt{contains(A,\ e)} & A contains element e\tabularnewline
+\texttt{card(A)} & the cardinality of A (number of elements in
+A)\tabularnewline
+\texttt{incl(A,\ elem)} & same as
+\texttt{A\ =\ A\ +\ \{elem\}}\tabularnewline
+\texttt{excl(A,\ elem)} & same as
+\texttt{A\ =\ A\ -\ \{elem\}}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\hypertarget{bit-fields}{%
+\paragraph{Bit fields}\label{bit-fields}}
+
+Sets are often used to define a type for the \emph{flags} of a
+procedure. This is a cleaner (and type safe) solution than defining
+integer constants that have to be \texttt{or}'ed together.
+
+Enum, sets and casting can be used together as in:
+
+\begin{verbatim}
+type
+  MyFlag* {.size: sizeof(cint).} = enum
+    A
+    B
+    C
+    D
+  MyFlags = set[MyFlag]
+
+proc toNum(f: MyFlags): int = cast[cint](f)
+proc toFlags(v: int): MyFlags = cast[MyFlags](v)
+
+assert toNum({}) == 0
+assert toNum({A}) == 1
+assert toNum({D}) == 8
+assert toNum({A, C}) == 5
+assert toFlags(0) == {}
+assert toFlags(7) == {A, B, C}
+\end{verbatim}
+
+Note how the set turns enum values into powers of 2.
+
+If using enums and sets with C, use distinct cint.
+
+For interoperability with C see also the
+\href{manual.html\#implementation-specific-pragmas-bitsize-pragma}{bitsize
+pragma}.
+
+\hypertarget{arrays}{%
+\subsubsection{Arrays}\label{arrays}}
+
+An array is a simple fixed length container. Each element in an array
+has the same type. The array's index type can be any ordinal type.
+
+Arrays can be constructed using \texttt{{[}{]}}:
+
+\begin{verbatim}
+type
+  IntArray = array[0..5, int] # an array that is indexed with 0..5
+var
+  x: IntArray
+x = [1, 2, 3, 4, 5, 6]
+for i in low(x)..high(x):
+  echo x[i]
+\end{verbatim}
+
+The notation \texttt{x{[}i{]}} is used to access the i-th element of
+\texttt{x}. Array access is always bounds checked (at compile-time or at
+runtime). These checks can be disabled via pragmas or invoking the
+compiler with the \texttt{-\/-bound\_checks:off} command line switch.
+
+Arrays are value types, like any other Nim type. The assignment operator
+copies the whole array contents.
+
+The built-in \href{system.html\#len,TOpenArray}{len} proc returns the
+array's length. \href{system.html\#low,openArray\%5BT\%5D}{low(a)}
+returns the lowest valid index for the array {a} and
+\href{system.html\#high,openArray\%5BT\%5D}{high(a)} the highest valid
+index.
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[type]
+\begin{description}
+\item[Direction = enum]
+north, east, south, west
+\item[BlinkLights = enum]
+off, on, slowBlink, mediumBlink, fastBlink
+\end{description}
+
+LevelSetting = array{[}north..west, BlinkLights{]}
+\item[var]
+level: LevelSetting
+\end{description}
+
+level{[}north{]} = on level{[}south{]} = slowBlink level{[}east{]} =
+fastBlink echo repr(level) \# -\/-\textgreater{} {[}on, fastBlink,
+slowBlink, off{]} echo low(level) \# -\/-\textgreater{} north echo
+len(level) \# -\/-\textgreater{} 4 echo high(level) \#
+-\/-\textgreater{} west
+\end{quote}
+
+The syntax for nested arrays (multidimensional) in other languages is a
+matter of appending more brackets because usually each dimension is
+restricted to the same index type as the others. In Nim you can have
+different dimensions with different index types, so the nesting syntax
+is slightly different. Building on the previous example where a level is
+defined as an array of enums indexed by yet another enum, we can add the
+following lines to add a light tower type subdivided in height levels
+accessed through their integer index:
+
+\begin{verbatim}
+\end{verbatim}
+
+Note how the built-in \texttt{len} proc returns only the array's first
+dimension length. Another way of defining the \texttt{LightTower} to
+better illustrate its nested nature would be to omit the previous
+definition of the \texttt{LevelSetting} type and instead write it
+embedded directly as the type of the first dimension:
+
+\begin{verbatim}
+\end{verbatim}
+
+It is quite common to have arrays start at zero, so there's a shortcut
+syntax to specify a range from zero to the specified index minus one:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[type]
+IntArray = array{[}0..5, int{]} \# an array that is indexed with 0..5
+QuickArray = array{[}6, int{]} \# an array that is indexed with 0..5
+\item[var]
+x: IntArray y: QuickArray
+\end{description}
+
+x = {[}1, 2, 3, 4, 5, 6{]} y = x for i in low(x)..high(x): echo
+x{[}i{]}, y{[}i{]}
+\end{quote}
+
+\hypertarget{sequences}{%
+\subsubsection{Sequences}\label{sequences}}
+
+Sequences are similar to arrays but of dynamic length which may change
+during runtime (like strings). Since sequences are resizable they are
+always allocated on the heap and garbage collected.
+
+Sequences are always indexed with an \texttt{int} starting at position
+0. The \href{system.html\#len,seq\%5BT\%5D}{len},
+\href{system.html\#low,openArray\%5BT\%5D}{low} and
+\href{system.html\#high,openArray\%5BT\%5D}{high} operations are
+available for sequences too. The notation \texttt{x{[}i{]}} can be used
+to access the i-th element of \texttt{x}.
+
+Sequences can be constructed by the array constructor \texttt{{[}{]}} in
+conjunction with the array to sequence operator \texttt{@}. Another way
+to allocate space for a sequence is to call the built-in
+\href{system.html\#newSeq}{newSeq} procedure.
+
+A sequence may be passed to an openarray parameter.
+
+Example:
+
+\begin{verbatim}
+var
+  x: seq[int] # a reference to a sequence of integers
+x = @[1, 2, 3, 4, 5, 6] # the @ turns the array into a sequence allocated on the heap
+\end{verbatim}
+
+Sequence variables are initialized with \texttt{@{[}{]}}.
+
+The \texttt{for} statement can be used with one or two variables when
+used with a sequence. When you use the one variable form, the variable
+will hold the value provided by the sequence. The \texttt{for} statement
+is looping over the results from the
+\href{system.html\#items.i,seq\%5BT\%5D}{items()} iterator from the
+\href{system.html}{system} module. But if you use the two variable form,
+the first variable will hold the index position and the second variable
+will hold the value. Here the \texttt{for} statement is looping over the
+results from the \href{system.html\#pairs.i,seq\%5BT\%5D}{pairs()}
+iterator from the \href{system.html}{system} module. Examples:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[for value in @{[}3, 4, 5{]}:]
+echo value
+\end{description}
+
+\# -\/-\textgreater{} 3 \# -\/-\textgreater{} 4 \# -\/-\textgreater{} 5
+
+\begin{description}
+\item[for i, value in @{[}3, 4, 5{]}:]
+echo "index: ", \$i, ", value:", \$value
+\end{description}
+
+\# -\/-\textgreater{} index: 0, value:3 \# -\/-\textgreater{} index: 1,
+value:4 \# -\/-\textgreater{} index: 2, value:5
+\end{quote}
+
+\hypertarget{open-arrays}{%
+\subsubsection{Open arrays}\label{open-arrays}}
+
+\textbf{Note}: Openarrays can only be used for parameters.
+
+Often fixed size arrays turn out to be too inflexible; procedures should
+be able to deal with arrays of different sizes. The \texttt{openarray}
+type allows this. Openarrays are always indexed with an \texttt{int}
+starting at position 0. The \href{system.html\#len,TOpenArray}{len},
+\href{system.html\#low,openArray\%5BT\%5D}{low} and
+\href{system.html\#high,openArray\%5BT\%5D}{high} operations are
+available for open arrays too. Any array with a compatible base type can
+be passed to an openarray parameter, the index type does not matter.
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[var]
+fruits: seq{[}string{]} \# reference to a sequence of strings that is
+initialized with '@{[}{]}' capitals: array{[}3, string{]} \# array of
+strings with a fixed size
+\end{description}
+
+capitals = {[}"New York", "London", "Berlin"{]} \# array 'capitals'
+allows assignment of only three elements fruits.add("Banana") \#
+sequence 'fruits' is dynamically expandable during runtime
+fruits.add("Mango")
+
+\begin{description}
+\item[proc openArraySize(oa: openArray{[}string{]}): int =]
+oa.len
+\end{description}
+
+assert openArraySize(fruits) == 2 \# procedure accepts a sequence as
+parameter assert openArraySize(capitals) == 3 \# but also an array type
+\end{quote}
+
+The openarray type cannot be nested: multidimensional openarrays are not
+supported because this is seldom needed and cannot be done efficiently.
+
+\hypertarget{varargs}{%
+\subsubsection{Varargs}\label{varargs}}
+
+A \texttt{varargs} parameter is like an openarray parameter. However, it
+is also a means to implement passing a variable number of arguments to a
+procedure. The compiler converts the list of arguments to an array
+automatically:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[proc myWriteln(f: File, a: varargs{[}string{]}) =]
+\begin{description}
+\item[for s in items(a):]
+write(f, s)
+\end{description}
+
+write(f, "n")
+\end{description}
+
+myWriteln(stdout, "abc", "def", "xyz") \# is transformed by the compiler
+to: myWriteln(stdout, {[}"abc", "def", "xyz"{]})
+\end{quote}
+
+This transformation is only done if the varargs parameter is the last
+parameter in the procedure header. It is also possible to perform type
+conversions in this context:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[proc myWriteln(f: File, a: varargs{[}string, {\$}{]}) =]
+\begin{description}
+\item[for s in items(a):]
+write(f, s)
+\end{description}
+
+write(f, "n")
+\end{description}
+
+myWriteln(stdout, 123, "abc", 4.0) \# is transformed by the compiler to:
+myWriteln(stdout, {[}\$123, \$"abc", \$4.0{]})
+\end{quote}
+
+In this example \href{dollars.html}{\$} is applied to any argument that
+is passed to the parameter \texttt{a}. Note that \href{dollars.html}{\$}
+applied to strings is a nop.
+
+\hypertarget{slices}{%
+\subsubsection{Slices}\label{slices}}
+
+Slices look similar to subranges types in syntax but are used in a
+different context. A slice is just an object of type Slice which
+contains two bounds, {a} and {b}. By itself a slice is not very useful,
+but other collection types define operators which accept Slice objects
+to define ranges.
+
+\begin{verbatim}
+var
+  a = "Nim is a programming language"
+  b = "Slices are useless."
+
+echo a[7 .. 12] # --> 'a prog'
+b[11 .. ^2] = "useful"
+echo b # --> 'Slices are useful.'
+\end{verbatim}
+
+In the previous example slices are used to modify a part of a string.
+The slice's bounds can hold any value supported by their type, but it is
+the proc using the slice object which defines what values are accepted.
+
+To understand some of the different ways of specifying the indices of
+strings, arrays, sequences, etc., it must be remembered that Nim uses
+zero-based indices.
+
+So the string \texttt{b} is of length 19, and two different ways of
+specifying the indices are
+
+\begin{verbatim}
+"Slices are useless."
+ |          |     |
+ 0         11    17   using indices
+^19        ^8    ^2   using ^ syntax
+\end{verbatim}
+
+where \texttt{b{[}0\ ..\ \^{}1{]}} is equivalent to
+\texttt{b{[}0\ ..\ b.len-1{]}} and
+\texttt{b{[}0\ ..\textless{}\ b.len{]}}, and it can be seen that the
+\texttt{\^{}1} provides a short-hand way of specifying the
+\texttt{b.len-1}. See the \href{system.html\#\%5E.t\%2Cint}{backwards
+index operator}.
+
+In the above example, because the string ends in a period, to get the
+portion of the string that is "useless" and replace it with "useful".
+
+\texttt{b{[}11\ ..\ \^{}2{]}} is the portion "useless", and
+\texttt{b{[}11\ ..\ \^{}2{]}\ =\ "useful"} replaces the "useless"
+portion with "useful", giving the result "Slices are useful."
+
+Note 1: alternate ways of writing this are
+\texttt{b{[}\^{}8\ ..\ \^{}2{]}\ =\ "useful"} or as
+\texttt{b{[}11\ ..\ b.len-2{]}\ =\ "useful"} or as
+\texttt{b{[}11\ ..\textless{}\ b.len-1{]}\ =\ "useful"}.
+
+Note 2: As the \texttt{\^{}} template returns a
+\href{manual.html\#types-distinct-type}{distinct int} of type
+\texttt{BackwardsIndex}, we can have a \texttt{lastIndex} constant
+defined as \texttt{const\ lastIndex\ =\ \^{}1}, and later used as
+\texttt{b{[}0\ ..\ lastIndex{]}}.
+
+\hypertarget{objects}{%
+\subsubsection{Objects}\label{objects}}
+
+The default type to pack different values together in a single structure
+with a name is the object type. An object is a value type, which means
+that when an object is assigned to a new variable all its components are
+copied as well.
+
+Each object type \texttt{Foo} has a constructor
+\texttt{Foo(field:\ value,\ ...)} where all of its fields can be
+initialized. Unspecified fields will get their default value.
+
+\begin{verbatim}
+var person1 = Person(name: "Peter", age: 30)
+
+echo person1.name # "Peter"
+echo person1.age  # 30
+
+var person2 = person1 # copy of person 1
+
+person2.age += 14
+
+echo person1.age # 30
+echo person2.age # 44
+
+
+# the order may be changed
+let person3 = Person(age: 12, name: "Quentin")
+
+# not every member needs to be specified
+let person4 = Person(age: 3)
+# unspecified members will be initialized with their default
+# values. In this case it is the empty string.
+doAssert person4.name == ""
+\end{verbatim}
+
+Object fields that should be visible from outside the defining module
+have to be marked with \texttt{*}.
+
+\begin{verbatim}
+type
+  Person* = object # the type is visible from other modules
+    name*: string  # the field of this type is visible from other modules
+    age*: int
+\end{verbatim}
+
+\hypertarget{tuples}{%
+\subsubsection{Tuples}\label{tuples}}
+
+Tuples are very much like what you have seen so far from objects. They
+are value types where the assignment operator copies each component.
+Unlike object types though, tuple types are structurally typed, meaning
+different tuple-types are \emph{equivalent} if they specify fields of
+the same type and of the same name in the same order.
+
+The constructor \texttt{()} can be used to construct tuples. The order
+of the fields in the constructor must match the order in the tuple's
+definition. But unlike objects, a name for the tuple type may not be
+used here.
+
+Like the object type the notation \texttt{t.field} is used to access a
+tuple's field. Another notation that is not available for objects is
+\texttt{t{[}i{]}} to access the \texttt{i}'th field. Here \texttt{i}
+must be a constant integer.
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+\begin{description}
+\item[type]
+\# type representing a person: \# A person consists of a name and an
+age. Person = tuple name: string age: int
+
+\# Alternative syntax for an equivalent type. PersonX = tuple{[}name:
+string, age: int{]}
+
+\# anonymous field syntax PersonY = (string, int)
+\item[var]
+person: Person personX: PersonX personY: PersonY
+\end{description}
+
+person = (name: "Peter", age: 30) \# Person and PersonX are equivalent
+personX = person
+
+\# Create a tuple with anonymous fields: personY = ("Peter", 30)
+
+\# A tuple with anonymous fields is compatible with a tuple that has \#
+field names. person = personY personY = person
+
+\# Usually used for short tuple initialization syntax person = ("Peter",
+30)
+
+echo person.name \# "Peter" echo person.age \# 30
+
+echo person{[}0{]} \# "Peter" echo person{[}1{]} \# 30
+
+\# You don't need to declare tuples in a separate type section. var
+building: tuple{[}street: string, number: int{]} building = ("Rue del
+Percebe", 13) echo building.street
+
+\# The following line does not compile, they are different tuples!
+\#person = building \# -\/-\textgreater{} Error: type mismatch: got
+(tuple{[}street: string, number: int{]}) \# but expected 'Person'
+\end{quote}
+
+Even though you don't need to declare a type for a tuple to use it,
+tuples created with different field names will be considered different
+objects despite having the same field types.
+
+Tuples can be \emph{unpacked} during variable assignment (and only
+then!). This can be handy to assign directly the fields of the tuples to
+individually named variables. An example of this is the
+\href{os.html\#splitFile,string}{splitFile} proc from the
+\href{os.html}{os module} which returns the directory, name and
+extension of a path at the same time. For tuple unpacking to work you
+must use parentheses around the values you want to assign the unpacking
+to, otherwise you will be assigning the same value to all the individual
+variables! For example:
+
+\begin{verbatim}
+import os
+
+let
+  path = "usr/local/nimc.html"
+  (dir, name, ext) = splitFile(path)
+  baddir, badname, badext = splitFile(path)
+echo dir      # outputs `usr/local`
+echo name     # outputs `nimc`
+echo ext      # outputs `.html`
+# All the following output the same line:
+# `(dir: usr/local, name: nimc, ext: .html)`
+echo baddir
+echo badname
+echo badext
+\end{verbatim}
+
+Fields of tuples are always public, they don't need to be explicity
+marked to be exported, unlike for example fields in an object type.
+
+\hypertarget{reference-and-pointer-types}{%
+\subsubsection{Reference and pointer
+types}\label{reference-and-pointer-types}}
+
+References (similar to pointers in other programming languages) are a
+way to introduce many-to-one relationships. This means different
+references can point to and modify the same location in memory.
+
+Nim distinguishes between \texttt{traced} and \texttt{untraced}
+references. Untraced references are also called \emph{pointers}. Traced
+references point to objects in a garbage collected heap, untraced
+references point to manually allocated objects or to objects elsewhere
+in memory. Thus untraced references are \emph{unsafe}. However for
+certain low-level operations (e.g., accessing the hardware), untraced
+references are necessary.
+
+Traced references are declared with the \textbf{ref} keyword; untraced
+references are declared with the \textbf{ptr} keyword.
+
+The empty \texttt{{[}{]}} subscript notation can be used to
+\emph{derefer} a reference, meaning to retrieve the item the reference
+points to. The \texttt{.} (access a tuple/object field operator) and
+\texttt{{[}{]}} (array/string/sequence index operator) operators perform
+implicit dereferencing operations for reference types:
+
+\begin{verbatim}
+type
+  Node = ref object
+    le, ri: Node
+    data: int
+var
+  n: Node
+new(n)
+n.data = 9
+# no need to write n[].data; in fact n[].data is highly discouraged!
+\end{verbatim}
+
+To allocate a new traced object, the built-in procedure \texttt{new}
+must be used. To deal with untraced memory, the procedures
+\texttt{alloc}, \texttt{dealloc} and \texttt{realloc} can be used. The
+\href{system.html}{system} module's documentation contains further
+details.
+
+If a reference points to \emph{nothing}, it has the value \texttt{nil}.
+
+\hypertarget{procedural-type}{%
+\subsubsection{Procedural type}\label{procedural-type}}
+
+A procedural type is a (somewhat abstract) pointer to a procedure.
+\texttt{nil} is an allowed value for a variable of a procedural type.
+Nim uses procedural types to achieve \texttt{functional} programming
+techniques.
+
+Example:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{quote}
+proc echoItem(x: int) = echo x
+
+\begin{description}
+\item[proc forEach(action: proc (x: int)) =]
+\begin{description}
+\item[const]
+data = {[}2, 3, 5, 7, 11{]}
+\item[for d in items(data):]
+action(d)
+\end{description}
+\end{description}
+
+forEach(echoItem)
+\end{quote}
+
+A subtle issue with procedural types is that the calling convention of
+the procedure influences the type compatibility: procedural types are
+only compatible if they have the same calling convention. The different
+calling conventions are listed in the
+\href{manual.html\#types-procedural-type}{manual}.
+
+\hypertarget{distinct-type}{%
+\subsubsection{Distinct type}\label{distinct-type}}
+
+A Distinct type allows for the creation of new type that "does not imply
+a subtype relationship between it and its base type". You must
+\textbf{explicitly} define all behaviour for the distinct type. To help
+with this, both the distinct type and its base type can cast from one
+type to the other. Examples are provided in the
+\href{manual.html\#types-distinct-type}{manual}.
+
+\hypertarget{modules}{%
+\subsection{Modules}\label{modules}}
+
+Nim supports splitting a program into pieces with a module concept. Each
+module is in its own file. Modules enable \texttt{information\ hiding}
+and \texttt{separate\ compilation}. A module may gain access to the
+symbols of another module by using the \texttt{import} statement. Only
+top-level symbols that are marked with an asterisk (\texttt{*}) are
+exported:
+
+\begin{verbatim}
+proc `*` *(a, b: seq[int]): seq[int] =
+  # allocate a new sequence:
+  newSeq(result, len(a))
+  # multiply two int sequences:
+  for i in 0..len(a)-1: result[i] = a[i] * b[i]
+
+when isMainModule:
+  # test the new ``*`` operator for sequences:
+  assert(@[1, 2, 3] * @[1, 2, 3] == @[1, 4, 9])
+\end{verbatim}
+
+The above module exports \texttt{x} and \texttt{*}, but not \texttt{y}.
+
+A module's top-level statements are executed at the start of the
+program. This can be used to initialize complex data structures for
+example.
+
+Each module has a special magic constant \texttt{isMainModule} that is
+true if the module is compiled as the main file. This is very useful to
+embed tests within the module as shown by the above example.
+
+A symbol of a module \emph{can} be \emph{qualified} with the
+\texttt{module.symbol} syntax. And if a symbol is ambiguous, it
+\emph{must} be qualified. A symbol is ambiguous if it is defined in two
+(or more) different modules and both modules are imported by a third
+one:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{verbatim}
+var x = 4
+write(stdout, x) # not ambiguous: uses the module C's x
+\end{verbatim}
+
+But this rule does not apply to procedures or iterators. Here the
+overloading rules apply:
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{verbatim}
+\end{verbatim}
+
+\begin{verbatim}
+proc x*(a: int): string = discard
+write(stdout, x(3))   # ambiguous: which `x` is to call?
+\end{verbatim}
+
+\hypertarget{excluding-symbols}{%
+\subsubsection{Excluding symbols}\label{excluding-symbols}}
+
+The normal \texttt{import} statement will bring in all exported symbols.
+These can be limited by naming symbols which should be excluded with the
+\texttt{except} qualifier.
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{from-statement}{%
+\subsubsection{From statement}\label{from-statement}}
+
+We have already seen the simple \texttt{import} statement that just
+imports all exported symbols. An alternative that only imports listed
+symbols is the \texttt{from\ import} statement:
+
+\begin{verbatim}
+\end{verbatim}
+
+The \texttt{from} statement can also force namespace qualification on
+symbols, thereby making symbols available, but needing to be qualified
+to be used.
+
+\begin{verbatim}
+x()           # use x without any qualification
+\end{verbatim}
+
+\begin{verbatim}
+mymodule.x()  # must qualify x with the module name as prefix
+
+x()           # using x here without qualification is a compile error
+\end{verbatim}
+
+Since module names are generally long to be descriptive, you can also
+define a shorter alias to use when qualifying symbols.
+
+\begin{verbatim}
+m.x()         # m is aliasing mymodule
+\end{verbatim}
+
+\hypertarget{include-statement}{%
+\subsubsection{Include statement}\label{include-statement}}
+
+The \texttt{include} statement does something fundamentally different
+than importing a module: it merely includes the contents of a file. The
+\texttt{include} statement is useful to split up a large module into
+several files:
+
+\begin{verbatim}
+\end{verbatim}
+
+\hypertarget{part-2}{%
+\subsection{Part 2}\label{part-2}}
+
+So, now that we are done with the basics, let's see what Nim offers
+apart from a nice syntax for procedural programming:
+\href{tut2.html}{Part II}

@@ -1,0 +1,778 @@
+\hypertarget{contributing}{%
+\section{Contributing}\label{contributing}}
+
+Contributing happens via "Pull requests" (PR) on github. Every PR needs
+to be reviewed before it can be merged and the Continuous Integration
+should be green.
+
+The PR has to be approved (and is often merged too) by one "code owner",
+either by the code owner who is responsible for the subsystem the PR
+belongs to or by two core developers or by Araq.
+
+See \href{codeowners.html}{codeowners} for more details.
+
+\hypertarget{writing-tests}{%
+\subsection{Writing tests}\label{writing-tests}}
+
+There are 4 types of tests:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \texttt{runnableExamples} documentation comment tests, ran by
+  \texttt{nim\ doc\ mymod.nim} These end up in documentation and ensure
+  documentation stays in sync with code.
+\item
+  separate test files, e.g.: \texttt{tests/stdlib/tos.nim}. In nim repo,
+  {testament} (see below) runs all {\$nim/tests/*/t*.nim} test files;
+  for nimble packages, see
+  \url{https://github.com/nim-lang/nimble\#tests}.
+\item
+  (deprecated) tests in \texttt{when\ isMainModule:} block, ran by
+  \texttt{nim\ r\ mymod.nim}. \texttt{nimble\ test} can run those in
+  nimble packages when specified in a {task "test"}.
+\item
+  (not preferred) {.. code-block:: nim} RST snippets; these should only
+  be used in rst sources, in nim sources {runnableExamples} should now
+  always be preferred to those for several reasons (cleaner syntax,
+  syntax highlights, batched testing, and {rdoccmd} allows
+  customization).
+\end{enumerate}
+
+Not all the tests follow the convention here, feel free to change the
+ones that don't. Always leave the code cleaner than you found it.
+
+\hypertarget{stdlib}{%
+\subsubsection{Stdlib}\label{stdlib}}
+
+Each stdlib module (anything under \texttt{lib/}, e.g.
+\texttt{lib/pure/os.nim}) should preferably have a corresponding
+separate test file, eg {tests/stdlib/tos.nim}. The old convention was to
+add a \texttt{when\ isMainModule:} block in the source file, which only
+gets executed when the tester is building the file.
+
+Each test should be in a separate \texttt{block:} statement, such that
+each has its own scope. Use boolean conditions and \texttt{doAssert} for
+the testing by itself, don't rely on echo statements or similar; in
+particular avoid things like {echo "done"}.
+
+Sample test:
+
+\begin{verbatim}
+block: # bug #1234
+  static: doAssert 1+1 == 2
+
+block: # bug #1235
+  var seq2D = newSeqWith(4, newSeq[bool](2))
+  seq2D[0][0] = true
+  seq2D[1][0] = true
+  seq2D[0][1] = true
+  doAssert seq2D == @[@[true, true], @[true, false],
+                      @[false, false], @[false, false]]
+  # doAssert with `not` can now be done as follows:
+  doAssert not (1 == 2)
+\end{verbatim}
+
+Always refer to a github issue using the following exact syntax: {bug
+\#1234} as shown above, so that it's consistent and easier to search or
+for tooling. Some browser extensions (eg
+\url{https://github.com/sindresorhus/refined-github}) will even turn
+those in clickable links when it works.
+
+Rationale for using a separate test file instead of {when isMainModule:}
+block: * allows custom compiler flags or testing options (see details
+below) * faster CI since they can be joined in {megatest} (combined into
+a single test) * avoids making the parser do un-necessary work when a
+source file is merely imported * avoids mixing source and test code when
+reporting line of code statistics or code coverage
+
+\hypertarget{compiler}{%
+\subsubsection{Compiler}\label{compiler}}
+
+The tests for the compiler use a testing tool called \texttt{testament}.
+They are all located in \texttt{tests/} (e.g.:
+\texttt{tests/destructor/tdestructor3.nim}). Each test has its own file.
+All test files are prefixed with \texttt{t}. If you want to create a
+file for import into another test only, use the prefix \texttt{m}.
+
+At the beginning of every test is the expected behavior of the test.
+Possible keys are:
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{cmd}: A compilation command template e.g.
+  \texttt{nim\ \$target\ -\/-threads:on\ \$options\ \$file}
+\item
+  \texttt{output}: The expected output (stdout + stderr), most likely
+  via \texttt{echo}
+\item
+  \texttt{exitcode}: Exit code of the test (via \texttt{exit(number)})
+\item
+  \texttt{errormsg}: The expected compiler error message
+\item
+  \texttt{file}: The file the errormsg was produced at
+\item
+  \texttt{line}: The line the errormsg was produced at
+\end{itemize}
+
+For a full spec, see here: \texttt{testament/specs.nim}
+
+An example for a test:
+
+\begin{verbatim}
+discard """
+  errormsg: "type mismatch: got (PTest)"
+"""
+
+type
+  PTest = ref object
+
+proc test(x: PTest, y: int) = nil
+
+var buf: PTest
+buf.test()
+\end{verbatim}
+
+\hypertarget{running-tests}{%
+\subsection{Running tests}\label{running-tests}}
+
+You can run the tests with
+
+\begin{verbatim}
+./koch tests
+\end{verbatim}
+
+which will run a good subset of tests. Some tests may fail. If you only
+want to see the output of failing tests, go for
+
+\begin{verbatim}
+./koch tests --failing all
+\end{verbatim}
+
+You can also run only a single category of tests. A category is a
+subdirectory in the \texttt{tests} directory. There are a couple of
+special categories; for a list of these, see
+\texttt{testament/categories.nim}, at the bottom.
+
+\begin{verbatim}
+./koch tests c lib # compiles/runs stdlib modules, including `isMainModule` tests
+./koch tests c megatest # runs a set of tests that can be combined into 1
+\end{verbatim}
+
+To run a single test:
+
+\begin{verbatim}
+./koch test run <category>/<name>    # e.g.: tuples/ttuples_issues
+./koch test run tests/stdlib/tos.nim # can also provide relative path
+\end{verbatim}
+
+For reproducible tests (to reproduce an environment more similar to the
+one run by Continuous Integration on travis/appveyor), you may want to
+disable your local configuration (e.g. in
+\texttt{\textasciitilde{}/.config/nim/nim.cfg}) which may affect some
+tests; this can also be achieved by using
+\texttt{export\ XDG\_CONFIG\_HOME=pathtoAlternateConfig} before running
+\texttt{./koch} commands.
+
+\hypertarget{comparing-tests}{%
+\subsection{Comparing tests}\label{comparing-tests}}
+
+Test failures can be grepped using \texttt{Failure:}.
+
+The tester can compare two test runs. First, you need to create the
+reference test. You'll also need to the commit id, because that's what
+the tester needs to know in order to compare the two.
+
+\begin{verbatim}
+git checkout devel
+DEVEL_COMMIT=$(git rev-parse HEAD)
+./koch tests
+\end{verbatim}
+
+Then switch over to your changes and run the tester again.
+
+\begin{verbatim}
+git checkout your-changes
+./koch tests
+\end{verbatim}
+
+Then you can ask the tester to create a \texttt{testresults.html} which
+will tell you if any new tests passed/failed.
+
+\begin{verbatim}
+./koch tests --print html $DEVEL_COMMIT
+\end{verbatim}
+
+\hypertarget{deprecation}{%
+\subsection{Deprecation}\label{deprecation}}
+
+Backward compatibility is important, so instead of a rename you need to
+deprecate the old name and introduce a new name:
+
+\begin{verbatim}
+# for routines (proc/template/macro/iterator) and types:
+proc oldProc(a: int, b: float): bool {.deprecated:
+    "deprecated since v1.2.3; use `newImpl: string -> int` instead".} = discard
+
+# for (const/var/let/fields) the msg is not yet supported:
+const Foo {.deprecated.}  = 1
+
+# for enum types, you can deprecate the type or some elements
+# (likewise with object types and their fields):
+type Bar {.deprecated.} = enum bar0, bar1
+type Barz  = enum baz0, baz1 {.deprecated.}, baz2
+\end{verbatim}
+
+See also \href{manual.html\#pragmas-deprecated-pragma}{Deprecated}
+pragma in the manual.
+
+\hypertarget{documentation}{%
+\subsection{Documentation}\label{documentation}}
+
+When contributing new procs, be sure to add documentation, especially if
+the proc is public. Even private procs benefit from documentation and
+can be viewed using \texttt{nim\ doc\ -\/-docInternal\ foo.nim}.
+Documentation begins on the line following the \texttt{proc} definition,
+and is prefixed by \texttt{\#\#} on each line.
+
+Runnable code examples are also encouraged, to show typical behavior
+with a few test cases (typically 1 to 3 \texttt{assert} statements,
+depending on complexity). These \texttt{runnableExamples} are
+automatically run by \texttt{nim\ doc\ mymodule.nim} as well as
+\texttt{testament} and guarantee they stay in sync.
+
+\begin{verbatim}
+\end{verbatim}
+
+See \href{os.html\#parentDir,string}{parentDir} example.
+
+The RestructuredText Nim uses has a special syntax for including code
+snippets embedded in documentation; these are not run by
+\texttt{nim\ doc} and therefore are not guaranteed to stay in sync, so
+\texttt{runnableExamples} is usually preferred:
+
+\begin{verbatim}
+proc someproc*(): string =
+  ## Return "something"
+  ##
+  ## .. code-block::
+  ##  echo someproc() # "something"
+  result = "something" # single-hash comments do not produce documentation
+\end{verbatim}
+
+The \texttt{..\ code-block::\ nim} followed by a newline and an
+indentation instructs the \texttt{nim\ doc} command to produce
+syntax-highlighted example code with the documentation
+(\texttt{..\ code-block::} is sufficient from inside a nim module).
+
+When forward declaration is used, the documentation should be included
+with the first appearance of the proc.
+
+\begin{verbatim}
+proc hello*(): string
+  ## Put documentation here
+proc nothing() = discard
+proc hello*(): string =
+  ## ignore this
+  echo "hello"
+\end{verbatim}
+
+The preferred documentation style is to begin with a capital letter and
+use the imperative (command) form. That is, between:
+
+\begin{verbatim}
+proc hello*(): string =
+  ## Return "hello"
+  result = "hello"
+\end{verbatim}
+
+or
+
+\begin{verbatim}
+proc hello*(): string =
+  ## says hello
+  result = "hello"
+\end{verbatim}
+
+the first is preferred.
+
+\hypertarget{best-practices}{%
+\subsection{Best practices}\label{best-practices}}
+
+Note: these are general guidelines, not hard rules; there are always
+exceptions. Code reviews can just point to a specific section here to
+save time and propagate best practices.
+
+by {nim} for symbols in nim sources (e.g. compiler, standard library).
+This is to avoid name conflicts across packages.
+
+\begin{verbatim}
+# if in nim sources
+when defined(allocStats): discard # bad, can cause conflicts
+when defined(nimAllocStats): discard # preferred
+# if in a pacakge `cligen`:
+when defined(debug): discard # bad, can cause conflicts
+when defined(cligenDebug): discard # preferred
+\end{verbatim}
+
+\begin{verbatim}
+doAssert isValid() == true
+doAssert isValid() # preferred
+\end{verbatim}
+
+\begin{verbatim}
+proc foo(cond: bool, lines: seq[string]) # bad
+proc foo(lines: seq[string], cond: bool) # preferred
+# can be called as: `getLines().foo(false)`
+\end{verbatim}
+
+rationale: \url{https://forum.nim-lang.org/t/4089}
+
+\begin{verbatim}
+quit() # bad in almost all cases
+doAssert() # preferred
+\end{verbatim}
+
+be enabled even in release mode (except for tests in
+\texttt{runnableExamples} blocks which for which \texttt{nim\ doc}
+ignores \texttt{-d:release}).
+
+\begin{verbatim}
+when isMainModule:
+  assert foo() # bad
+  doAssert foo() # preferred
+\end{verbatim}
+
+rationale: it's more flexible (e.g. allows caller to call custom
+printing, including prepending location info, writing to log files,
+etc).
+
+\begin{verbatim}
+proc foo() = echo "bar" # bad
+proc foo(): string = "bar" # preferred (usually)
+\end{verbatim}
+
+unless stack allocation is needed (e.g. for efficiency).
+
+\begin{verbatim}
+proc foo(a: var Bar): bool
+proc foo(): Option[Bar]
+\end{verbatim}
+
+except when that's not possible. It's more precise, easier for readers
+and maintaners to where expected values refer to. See for example
+\url{https://github.com/nim-lang/Nim/pull/9335} and
+\url{https://forum.nim-lang.org/t/4089}
+
+\begin{verbatim}
+echo foo() # adds a line for testament in `output:` block inside `discard`.
+doAssert foo() == [1, 2] # preferred, except when not possible to do so.
+\end{verbatim}
+
+\hypertarget{the-git-stuff}{%
+\subsection{The Git stuff}\label{the-git-stuff}}
+
+\hypertarget{general-commit-rules}{%
+\subsubsection{General commit rules}\label{general-commit-rules}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Important, critical bugfixes that have a tiny chance of breaking
+  somebody's code should be backported to the latest stable release
+  branch (currently 1.2.x) and maybe also to the 1.0 branch. The commit
+  message should contain the tag \texttt{{[}backport{]}} for "backport
+  to all stable releases" and the tag \texttt{{[}backport:\$VERSION{]}}
+  for backporting to the given \$VERSION.
+\item
+  If you introduce changes which affect backwards compatibility, make
+  breaking changes, or have PR which is tagged as
+  \texttt{{[}feature{]}}, the changes should be mentioned in
+  \href{https://github.com/nim-lang/Nim/blob/devel/changelog.md}{the
+  changelog}.
+\item
+  All changes introduced by the commit (diff lines) must be related to
+  the subject of the commit.
+
+  If you change something unrelated to the subject parts of the file,
+  because your editor reformatted automatically the code or whatever
+  different reason, this should be excluded from the commit.
+
+  \emph{Tip:} Never commit everything as is using
+  \texttt{git\ commit\ -a}, but review carefully your changes with
+  \texttt{git\ add\ -p}.
+\item
+  Changes should not introduce any trailing whitespace.
+
+  Always check your changes for whitespace errors using
+  \texttt{git\ diff\ -\/-check} or add following \texttt{pre-commit}
+  hook:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\#!/bin/sh}
+\FunctionTok{git}\NormalTok{ diff {-}{-}check {-}{-}cached }\KeywordTok{||} \BuiltInTok{exit} \VariableTok{$?}
+\end{Highlighting}
+\end{Shaded}
+\item
+  Describe your commit and use your common sense. Example commit
+  message:
+
+  \texttt{Fixes\ \#123;\ refs\ \#124}
+
+  indicates that issue \texttt{\#123} is completely fixed (github may
+  automatically close it when the PR is committed), wheres issue
+  \texttt{\#124} is referenced (e.g.: partially fixed) and won't close
+  the issue when committed.
+\item
+  Commits should be always be rebased against devel (so a fast forward
+  merge can happen)
+
+  e.g.: use \texttt{git\ pull\ -\/-rebase\ origin\ devel}. This is to
+  avoid messing up git history. Exceptions should be very rare: when
+  rebase gives too many conflicts, simply squash all commits using the
+  script shown in \url{https://github.com/nim-lang/Nim/pull/9356}
+\item
+  Do not mix pure formatting changes (e.g. whitespace changes,
+  nimpretty) or automated changes (e.g. nimfix) with other code changes:
+  these should be in separate commits (and the merge on github should
+  not squash these into 1).
+\end{enumerate}
+
+\hypertarget{continuous-integration-ci}{%
+\subsubsection{Continuous Integration
+(CI)}\label{continuous-integration-ci}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Continuous Integration is by default run on every push in a PR; this
+  clogs the CI pipeline and affects other PR's; if you don't need it
+  (e.g. for WIP or documentation only changes), add
+  \texttt{{[}ci\ skip{]}} to your commit message title. This convention
+  is supported by
+  \href{https://www.appveyor.com/docs/how-to/filtering-commits/\#skip-directive-in-commit-message}{Appveyor}
+  and
+  \href{https://docs.travis-ci.com/user/customizing-the-build/\#skipping-a-build}{Travis}.
+\item
+  Consider enabling CI (travis and appveyor) in your own Nim fork, and
+  waiting for CI to be green in that fork (fixing bugs as needed) before
+  opening your PR in original Nim repo, so as to reduce CI congestion.
+  Same applies for updates on a PR: you can test commits on a separate
+  private branch before updating the main PR.
+\end{enumerate}
+
+\hypertarget{code-reviews}{%
+\subsubsection{Code reviews}\label{code-reviews}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Whenever possible, use github's new 'Suggested change' in code
+  reviews, which saves time explaining the change or applying it; see
+  also \url{https://forum.nim-lang.org/t/4317}
+\item
+  When reviewing large diffs that may involve code moving around,
+  github's interface doesn't help much as it doesn't highlight moves.
+  Instead you can use something like this, see visual results
+  \href{https://github.com/nim-lang/Nim/pull/10431\#issuecomment-456968196}{here}:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{git}\NormalTok{ fetch origin pull/10431/head }\KeywordTok{\&\&} \FunctionTok{git}\NormalTok{ checkout FETCH\_HEAD}
+\FunctionTok{git}\NormalTok{ diff {-}{-}color{-}moved{-}ws=allow{-}indentation{-}change {-}{-}color{-}moved=blocks HEAD\^{}}
+\end{Highlighting}
+\end{Shaded}
+\item
+  In addition, you can view github-like diffs locally to identify what
+  was changed within a code block using {diff-highlight} or
+  {diff-so-fancy}, e.g.:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# put this in \textasciitilde{}/.gitconfig:}
+\NormalTok{[}\ExtensionTok{core}\NormalTok{]}
+  \ExtensionTok{pager}\NormalTok{ = }\StringTok{"diff{-}so{-}fancy | less {-}R"}\NormalTok{ \# or: use: }\KeywordTok{\textasciigrave{}}\ExtensionTok{diff{-}highlight}\KeywordTok{\textasciigrave{}}
+\end{Highlighting}
+\end{Shaded}
+\end{enumerate}
+
+\hypertarget{documentation-style}{%
+\subsection{Documentation Style}\label{documentation-style}}
+
+\hypertarget{general-guidelines}{%
+\subsubsection{General Guidelines}\label{general-guidelines}}
+
+\begin{itemize}
+\tightlist
+\item
+  See also \href{https://nim-lang.github.io/Nim/nep1.html}{nep1} which
+  should probably be merged here.
+\item
+  Authors should document anything that is exported; documentation for
+  private procs can be useful too (visible via
+  \texttt{nim\ doc\ -\/-docInternal\ foo.nim}).
+\item
+  Within documentation, a period ({.}) should follow each sentence (or
+  sentence fragment) in a comment block. The documentation may be
+  limited to one sentence fragment, but if multiple sentences are within
+  the documentation, each sentence after the first should be complete
+  and in present tense.
+\item
+  Documentation is parsed as a custom ReStructuredText (RST) with
+  partial markdown support.
+\item
+  In nim sources, prefer single backticks to double backticks since it's
+  simpler and {nim doc} supports it (even in rst files with {nim
+  rst2html}).
+\item
+  In nim sources, for links, prefer {{[}link text{]}(link.html)} to
+  \texttt{\textasciigrave{}\ \textasciigrave{}link\ text\textless{}link.html\textgreater{}\textasciigrave{}\_}{
+  since the syntax is simpler and markdown is more common (likewise,
+  `nim rst2html} also supports it in rst files).
+\end{itemize}
+
+\begin{verbatim}
+proc someproc*(s: string, foo: int) =
+  ## Use single backticks for inline code, eg: `s` or `someExpr(true)`.
+  ## Use a backlash to follow with alphanumeric char: `int8`\s are great.
+\end{verbatim}
+
+\hypertarget{module-level-documentation}{%
+\subsubsection{Module-level
+documentation}\label{module-level-documentation}}
+
+Documentation of a module is placed at the top of the module itself.
+Each line of documentation begins with double hashes (\texttt{\#\#}).
+Sometimes \texttt{\#\#{[}\ multiline\ docs\ containing\ code\ {]}\#\#}
+is preferable, see \texttt{lib/pure/times.nim}. Code samples are
+encouraged, and should follow the general RST syntax:
+
+\begin{verbatim}
+## The `universe` module computes the answer to life, the universe, and everything.
+##
+## .. code-block::
+##  doAssert computeAnswerString() == 42
+\end{verbatim}
+
+Within this top-level comment, you can indicate the authorship and
+copyright of the code, which will be featured in the produced
+documentation.
+
+\begin{verbatim}
+## This is the best module ever. It provides answers to everything!
+##
+## :Author: Steve McQueen
+## :Copyright: 1965
+##
+\end{verbatim}
+
+Leave a space between the last line of top-level documentation and the
+beginning of Nim code (the imports, etc.).
+
+\hypertarget{procs-templates-macros-converters-and-iterators}{%
+\subsubsection{Procs, Templates, Macros, Converters, and
+Iterators}\label{procs-templates-macros-converters-and-iterators}}
+
+The documentation of a procedure should begin with a capital letter and
+should be in present tense. Variables referenced in the documentation
+should be surrounded by single tick marks:
+
+\begin{verbatim}
+proc example1*(x: int) =
+  ## Prints the value of `x`.
+  echo x
+\end{verbatim}
+
+Whenever an example of usage would be helpful to the user, you should
+include one within the documentation in RST format as below.
+
+\begin{verbatim}
+proc addThree*(x, y, z: int8): int =
+  ## Adds three `int8` values, treating them as unsigned and
+  ## truncating the result.
+  ##
+  ## .. code-block::
+  ##  # things that aren't suitable for a `runnableExamples` go in code-block:
+  ##  echo execCmdEx("git pull")
+  ##  drawOnScreen()
+  runnableExamples:
+    # `runnableExamples` is usually preferred to `code-block`, when possible.
+    doAssert addThree(3, 125, 6) == -122
+  result = x +% y +% z
+\end{verbatim}
+
+The commands \texttt{nim\ doc} and \texttt{nim\ doc2} will then
+correctly syntax highlight the Nim code within the documentation.
+
+\hypertarget{types}{%
+\subsubsection{Types}\label{types}}
+
+Exported types should also be documented. This documentation can also
+contain code samples, but those are better placed with the functions to
+which they refer.
+
+\begin{verbatim}
+type
+  NamedQueue*[T] = object ## Provides a linked data structure with names
+                          ## throughout. It is named for convenience. I'm making
+                          ## this comment long to show how you can, too.
+    name*: string ## The name of the item
+    val*: T ## Its value
+    next*: ref NamedQueue[T] ## The next item in the queue
+\end{verbatim}
+
+You have some flexibility when placing the documentation:
+
+\begin{verbatim}
+type
+  NamedQueue*[T] = object
+    ## Provides a linked data structure with names
+    ## throughout. It is named for convenience. I'm making
+    ## this comment long to show how you can, too.
+    name*: string ## The name of the item
+    val*: T ## Its value
+    next*: ref NamedQueue[T] ## The next item in the queue
+\end{verbatim}
+
+Make sure to place the documentation beside or within the object.
+
+\begin{verbatim}
+type
+  ## Bad: this documentation disappears because it annotates the ``type`` keyword
+  ## above, not ``NamedQueue``.
+  NamedQueue*[T] = object
+    name*: string ## This becomes the main documentation for the object, which
+                  ## is not what we want.
+    val*: T ## Its value
+    next*: ref NamedQueue[T] ## The next item in the queue
+\end{verbatim}
+
+\hypertarget{var-let-and-const}{%
+\subsubsection{Var, Let, and Const}\label{var-let-and-const}}
+
+When declaring module-wide constants and values, documentation is
+encouraged. The placement of doc comments is similar to the
+\texttt{type} sections.
+
+\begin{verbatim}
+const
+  X* = 42 ## An awesome number.
+  SpreadArray* = [
+    [1,2,3],
+    [2,3,1],
+    [3,1,2],
+  ] ## Doc comment for ``SpreadArray``.
+\end{verbatim}
+
+Placement of comments in other areas is usually allowed, but will not
+become part of the documentation output and should therefore be prefaced
+by a single hash (\texttt{\#}).
+
+\begin{verbatim}
+const
+  BadMathVals* = [
+    3.14, # pi
+    2.72, # e
+    0.58, # gamma
+  ] ## A bunch of badly rounded values.
+\end{verbatim}
+
+Nim supports Unicode in comments, so the above can be replaced with the
+following:
+
+\begin{verbatim}
+const
+  BadMathVals* = [
+    3.14, # π
+    2.72, # e
+    0.58, # γ
+  ] ## A bunch of badly rounded values (including π!).
+\end{verbatim}
+
+\hypertarget{evolving-the-stdlib}{%
+\subsection{Evolving the stdlib}\label{evolving-the-stdlib}}
+
+As outlined in \url{https://github.com/nim-lang/RFCs/issues/173} there
+are a couple of guidelines about what should go into the stdlib, what
+should be added and what eventually should be removed.
+
+\hypertarget{what-the-compiler-itself-needs-must-be-part-of-the-stdlib}{%
+\subsubsection{What the compiler itself needs must be part of the
+stdlib}\label{what-the-compiler-itself-needs-must-be-part-of-the-stdlib}}
+
+Maybe in the future the compiler itself can depend on Nimble packages
+but for the time being, we strive to have zero dependencies in the
+compiler as the compiler is the root of the bootstrapping process and is
+also used to build Nimble.
+
+\hypertarget{vocabulary-types-must-be-part-of-the-stdlib}{%
+\subsubsection{Vocabulary types must be part of the
+stdlib}\label{vocabulary-types-must-be-part-of-the-stdlib}}
+
+These are types most packages need to agree on for better
+interoperability, for example \texttt{Option{[}T{]}}. This rule also
+covers the existing collections like \texttt{Table}, \texttt{CountTable}
+etc. "Sorted" containers based on a tree-like data structure are still
+missing and should be added.
+
+Time handling, especially the \texttt{Time} type are also covered by
+this rule.
+
+\hypertarget{existing-battle-tested-modules-stay}{%
+\subsubsection{Existing, battle-tested modules
+stay}\label{existing-battle-tested-modules-stay}}
+
+Reason: There is no benefit in moving them around just to fullfill some
+design fashion as in "Nim's core MUST BE SMALL". If you don't like an
+existing module, don't import it. If a compilation target (e.g. JS)
+cannot support a module, document this limitation.
+
+This covers modules like \texttt{os}, \texttt{osproc},
+\texttt{strscans}, \texttt{strutils}, \texttt{strformat}, etc.
+
+\hypertarget{syntactic-helpers-can-start-as-experimental-stdlib-modules}{%
+\subsubsection{Syntactic helpers can start as experimental stdlib
+modules}\label{syntactic-helpers-can-start-as-experimental-stdlib-modules}}
+
+Reason: Generally speaking as external dependencies they are not exposed
+to enough users so that we can see if the shortcuts provide enough
+benefit or not. Many programmers avoid external dependencies, even
+moreso for "tiny syntactic improvements". However, this is only true for
+really good syntactic improvements that have the potential to clean up
+other parts of the Nim library substantially. If in doubt, new stdlib
+modules should start as external, successful Nimble packages.
+
+\hypertarget{other-new-stdlib-modules-do-not-start-as-stdlib-modules}{%
+\subsubsection{Other new stdlib modules do not start as stdlib
+modules}\label{other-new-stdlib-modules-do-not-start-as-stdlib-modules}}
+
+As we strive for higher quality everywhere, it's easier to adopt
+existing, battle-tested modules eventually rather than creating modules
+from scratch.
+
+\hypertarget{little-additions-are-acceptable}{%
+\subsubsection{Little additions are
+acceptable}\label{little-additions-are-acceptable}}
+
+As long as they are documented and tested well, adding little helpers to
+existing modules is acceptable. For two reasons:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  It makes Nim easier to learn and use in the long run. ("Why does
+  sequtils lack a \texttt{countIt}? Because version 1.0 happens to have
+  lacked it? Silly...")
+\item
+  To encourage contributions. Contributors often start with PRs that add
+  simple things and then they stay and also fix bugs. Nim is an open
+  source project and lives from people's contributions and involvement.
+  Newly introduced issues have to be balanced against motivating new
+  people. We know where to find perfectly designed pieces of software
+  that have no bugs -\/- these are the systems that nobody uses.
+\end{enumerate}

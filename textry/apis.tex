@@ -1,0 +1,52 @@
+\hypertarget{api-naming-design}{%
+\section{API naming design}\label{api-naming-design}}
+
+The API is designed to be \textbf{easy to use} and consistent. Ease of
+use is measured by the number of calls to achieve a concrete high level
+action.
+
+\hypertarget{naming-scheme}{%
+\subsection{Naming scheme}\label{naming-scheme}}
+
+The library uses a simple naming scheme that makes use of common
+abbreviations to keep the names short but meaningful. Since version
+0.8.2 many symbols have been renamed to fit this scheme. The ultimate
+goal is that the programmer can \emph{guess} a name.
+
+-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-
+-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-
+-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-English
+word To use Notes
+-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-
+-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-
+-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-initialize
+initT \texttt{init} is used to create a value type \texttt{T} new newP
+\texttt{new} is used to create a reference type \texttt{P} find find
+should return the position where something was found; for a bool result
+use \texttt{contains} contains contains often short for
+\texttt{find()\ \textgreater{}=\ 0} append add use \texttt{add} instead
+of \texttt{append} compare cmp should return an int with the
+\texttt{\textless{}\ 0} \texttt{==\ 0} or \texttt{\textgreater{}\ 0}
+semantics; for a bool result use \texttt{sameXYZ} put put,
+\texttt{{[}{]}=} consider overloading \texttt{{[}{]}=} for put get get,
+\texttt{{[}{]}} consider overloading \texttt{{[}{]}} for get; consider
+to not use \texttt{get} as a prefix: \texttt{len} instead of
+\texttt{getLen} length len also used for \emph{number of elements} size
+size, len size should refer to a byte size capacity cap memory mem
+implies a low-level operation items items default iterator over a
+collection pairs pairs iterator over (key, value) pairs delete delete,
+del del is supposed to be faster than delete, because it does not keep
+the order; delete keeps the order remove delete, del inconsistent right
+now remove-and-return pop \texttt{Table}/\texttt{TableRef} alias to
+\texttt{take} include incl exclude excl command cmd execute exec
+environment env variable var value value, val val is preferred,
+inconsistent right now executable exe directory dir path path path is
+the string "/usr/bin" (for example), dir is the content of "/usr/bin";
+inconsistent right now extension ext separator sep column col, column
+col is preferred, inconsistent right now application app configuration
+cfg message msg argument arg object obj parameter param operator opr
+procedure proc function func coordinate coord rectangle rect point point
+symbol sym literal lit string str identifier ident indentation indent
+-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-
+-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-
+-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-

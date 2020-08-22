@@ -1,0 +1,110 @@
+\hypertarget{packaging-nim}{%
+\section{Packaging Nim}\label{packaging-nim}}
+
+This page provide hints on distributing Nim using OS packages.
+
+See \href{distros.html}{distros} for tools to detect Linux distribution
+at runtime.
+
+\hypertarget{supported-architectures}{%
+\subsection{Supported architectures}\label{supported-architectures}}
+
+Nim runs on a wide variety of platforms. Support on amd64 and i386 is
+tested regularly, while less popular platforms are tested by the
+community.
+
+\begin{itemize}
+\tightlist
+\item
+  amd64
+\item
+  arm64 (aka aarch64)
+\item
+  armel
+\item
+  armhf
+\item
+  i386
+\item
+  m68k
+\item
+  mips64el
+\item
+  mipsel
+\item
+  powerpc
+\item
+  ppc64
+\item
+  ppc64el (aka ppc64le)
+\item
+  riscv64
+\end{itemize}
+
+The following platforms are seldomly tested:
+
+\begin{itemize}
+\tightlist
+\item
+  alpha
+\item
+  hppa
+\item
+  ia64
+\item
+  mips
+\item
+  s390x
+\item
+  sparc64
+\end{itemize}
+
+\hypertarget{packaging-for-linux}{%
+\subsection{Packaging for Linux}\label{packaging-for-linux}}
+
+See \url{https://github.com/nim-lang/Nim/labels/Installation} for
+installation-related bugs.
+
+Build Nim from the released tarball at
+\url{https://nim-lang.org/install_unix.html} It is different from the
+GitHub sources as it contains Nimble, C sources \& other tools.
+
+The Debian package ships bash and ksh completion and manpages that can
+be reused.
+
+Hints on the build process:
+
+\begin{verbatim}
+# build from C sources and then using koch
+./build.sh --os $os_type --cpu $cpu_arch
+./bin/nim c koch
+./koch boot -d:release
+
+# optionally generate docs into doc/html
+./koch docs
+
+./koch tools -d:release
+
+# extract files to be really installed
+./install.sh <tempdir>
+
+# also include the tools
+for fn in nimble nimsuggest nimgrep; do cp ./bin/$fn <tempdir>/nim/bin/; done
+\end{verbatim}
+
+What to install:
+
+\begin{itemize}
+\tightlist
+\item
+  The expected stdlib location is /usr/lib/nim
+\item
+  Global configuration files under /etc/nim
+\item
+  Optionally: manpages, documentation, shell completion
+\item
+  When installing documentation, .idx files are not required
+\item
+  The "compiler" directory contains compiler sources and should not be
+  part of the compiler binary package
+\end{itemize}

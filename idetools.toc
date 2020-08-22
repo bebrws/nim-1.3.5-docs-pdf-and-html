@@ -1,0 +1,26 @@
+\contentsline {section}{\numberline {1}Idetools invocation}{2}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Specifying the location of the query}{2}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Definitions}{2}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Suggestions}{3}{subsection.1.3}%
+\contentsline {subsection}{\numberline {1.4}Invocation context}{3}{subsection.1.4}%
+\contentsline {subsection}{\numberline {1.5}Symbol usages}{3}{subsection.1.5}%
+\contentsline {subsection}{\numberline {1.6}Expression evaluation}{3}{subsection.1.6}%
+\contentsline {section}{\numberline {2}Compiler as a service (CAAS)}{3}{section.2}%
+\contentsline {section}{\numberline {3}Parsing idetools output}{4}{section.3}%
+\contentsline {subsection}{\numberline {3.1}skConst}{4}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}skEnumField}{4}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}skForVar}{5}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}skIterator, skClosureIterator}{5}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}skLabel}{5}{subsection.3.5}%
+\contentsline {subsection}{\numberline {3.6}skLet}{5}{subsection.3.6}%
+\contentsline {subsection}{\numberline {3.7}skMacro}{5}{subsection.3.7}%
+\contentsline {subsection}{\numberline {3.8}skMethod}{6}{subsection.3.8}%
+\contentsline {subsection}{\numberline {3.9}skParam}{6}{subsection.3.9}%
+\contentsline {subsection}{\numberline {3.10}skProc}{6}{subsection.3.10}%
+\contentsline {subsection}{\numberline {3.11}skResult}{7}{subsection.3.11}%
+\contentsline {subsection}{\numberline {3.12}skTemplate}{7}{subsection.3.12}%
+\contentsline {subsection}{\numberline {3.13}skType}{7}{subsection.3.13}%
+\contentsline {subsection}{\numberline {3.14}skVar}{8}{subsection.3.14}%
+\contentsline {section}{\numberline {4}Test suite}{8}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Running the test suite}{8}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Test case file format}{8}{subsection.4.2}%

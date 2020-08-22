@@ -1,0 +1,203 @@
+\hypertarget{source-code-filters}{%
+\section{Source Code Filters}\label{source-code-filters}}
+
+A {Source Code Filter (SCF)} transforms the input character stream to an
+in-memory output stream before parsing. A filter can be used to provide
+templating systems or preprocessors.
+
+To use a filter for a source file the \texttt{\#?} notation is used:
+
+\begin{verbatim}
+#? stdtmpl(subsChar = '$', metaChar = '#')
+#proc generateXML(name, age: string): string =
+#  result = ""
+<xml>
+  <name>$name</name>
+  <age>$age</age>
+</xml>
+\end{verbatim}
+
+As the example shows, passing arguments to a filter can be done just
+like an ordinary procedure call with named or positional arguments. The
+available parameters depend on the invoked filter. Before version 0.12.0
+of the language \texttt{\#!} was used instead of \texttt{\#?}.
+
+\textbf{Hint:} With \texttt{-\/-hint{[}codeBegin{]}:on} or
+\texttt{-\/-verbosity:2} (or higher) while compiling or {nim check}, Nim
+lists the processed code after each filter application.
+
+\hypertarget{usage}{%
+\subsection{Usage}\label{usage}}
+
+First, put your SCF code in a separate file with filters specified in
+the first line. \textbf{Note:} You can name your SCF file with any file
+extension you want, but the conventional extension is \texttt{.nimf} (it
+used to be \texttt{.tmpl} but that was too generic, for example
+preventing github to recognize it as Nim source file).
+
+If we use {generateXML} code shown above and call the SCF file
+{xmlGen.nimf} In your `main.nim`:
+
+\begin{verbatim}
+echo generateXML("John Smith","42")
+\end{verbatim}
+
+\hypertarget{pipe-operator}{%
+\subsection{Pipe operator}\label{pipe-operator}}
+
+Filters can be combined with the \texttt{\textbar{}} pipe operator:
+
+\begin{verbatim}
+#? strip(startswith="<") | stdtmpl
+#proc generateXML(name, age: string): string =
+#  result = ""
+<xml>
+  <name>$name</name>
+  <age>$age</age>
+</xml>
+\end{verbatim}
+
+\hypertarget{available-filters}{%
+\subsection{Available filters}\label{available-filters}}
+
+\hypertarget{replace-filter}{%
+\subsubsection{Replace filter}\label{replace-filter}}
+
+The replace filter replaces substrings in each line.
+
+Parameters and their defaults:
+
+\begin{quote}
+\begin{description}
+\item[\texttt{sub:\ string\ =\ ""}]
+the substring that is searched for
+\item[\texttt{by:\ string\ =\ ""}]
+the string the substring is replaced with
+\end{description}
+\end{quote}
+
+\hypertarget{strip-filter}{%
+\subsubsection{Strip filter}\label{strip-filter}}
+
+The strip filter simply removes leading and trailing whitespace from
+each line.
+
+Parameters and their defaults:
+
+\begin{quote}
+\begin{description}
+\item[\texttt{startswith:\ string\ =\ ""}]
+strip only the lines that start with \emph{startswith} (ignoring leading
+whitespace). If empty every line is stripped.
+\item[\texttt{leading:\ bool\ =\ true}]
+strip leading whitespace
+\item[\texttt{trailing:\ bool\ =\ true}]
+strip trailing whitespace
+\end{description}
+\end{quote}
+
+\hypertarget{stdtmpl-filter}{%
+\subsubsection{StdTmpl filter}\label{stdtmpl-filter}}
+
+The stdtmpl filter provides a simple templating engine for Nim. The
+filter uses a line based parser: Lines prefixed with a \emph{meta
+character} (default: \texttt{\#}) contain Nim code, other lines are
+verbatim. Because indentation-based parsing is not suited for a
+templating engine, control flow statements need \texttt{end\ X}
+delimiters.
+
+Parameters and their defaults:
+
+\begin{quote}
+\begin{description}
+\item[\texttt{metaChar:\ char\ =\ \textquotesingle{}\#\textquotesingle{}}]
+prefix for a line that contains Nim code
+\item[\texttt{subsChar:\ char\ =\ \textquotesingle{}\$\textquotesingle{}}]
+prefix for a Nim expression within a template line
+\item[\texttt{conc:\ string\ =\ "\ \&\ "}]
+the operation for concatenation
+\item[\texttt{emit:\ string\ =\ "result.add"}]
+the operation to emit a string literal
+\item[\texttt{toString:\ string\ =\ "\$"}]
+the operation that is applied to each expression
+\end{description}
+\end{quote}
+
+Example:
+
+\begin{verbatim}
+#? stdtmpl | standard
+#proc generateHTMLPage(title, currentTab, content: string,
+#                      tabs: openArray[string]): string =
+#  result = ""
+<head><title>$title</title></head>
+<body>
+  <div id="menu">
+    <ul>
+  #for tab in items(tabs):
+    #if currentTab == tab:
+    <li><a id="selected"
+    #else:
+    <li><a
+    #end if
+    href="${tab}.html">$tab</a></li>
+  #end for
+    </ul>
+  </div>
+  <div id="content">
+    $content
+    A dollar: $$.
+  </div>
+</body>
+\end{verbatim}
+
+The filter transforms this into:
+
+\begin{verbatim}
+\end{verbatim}
+
+Each line that does not start with the meta character (ignoring leading
+whitespace) is converted to a string literal that is added to
+\texttt{result}.
+
+The substitution character introduces a Nim expression \emph{e} within
+the string literal. \emph{e} is converted to a string with the
+\emph{toString} operation which defaults to \texttt{\$}. For strong type
+checking, set \texttt{toString} to the empty string. \emph{e} must match
+this PEG pattern:
+
+\begin{verbatim}
+e <- [a-zA-Z\128-\255][a-zA-Z0-9\128-\255_.]* / '{' x '}'
+x <- '{' x+ '}' / [^}]*
+\end{verbatim}
+
+To produce a single substitution character it has to be doubled:
+\texttt{\$\$} produces \texttt{\$}.
+
+The template engine is quite flexible. It is easy to produce a procedure
+that writes the template code directly to a file:
+
+\begin{verbatim}
+#? stdtmpl(emit="f.write") | standard
+#proc writeHTMLPage(f: File, title, currentTab, content: string,
+#                   tabs: openArray[string]) =
+<head><title>$title</title></head>
+<body>
+  <div id="menu">
+    <ul>
+  #for tab in items(tabs):
+    #if currentTab == tab:
+    <li><a id="selected"
+    #else:
+    <li><a
+    #end if
+    href="${tab}.html" title = "$title - $tab">$tab</a></li>
+  #end for
+    </ul>
+  </div>
+  <div id="content">
+    $content
+    A dollar: $$.
+  </div>
+</body>
+\end{verbatim}

@@ -1,0 +1,404 @@
+\hypertarget{nimscript}{%
+\section{NimScript}\label{nimscript}}
+
+Strictly speaking, \texttt{NimScript} is the subset of Nim that can be
+evaluated by Nim's builtin virtual machine (VM). This VM is used for
+Nim's compiletime function evaluation features.
+
+The \texttt{nim} executable processes the \texttt{.nims} configuration
+files in the following directories (in this order; later files overwrite
+previous settings):
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi})}
+\tightlist
+\item
+  If environment variable \texttt{XDG\_CONFIG\_HOME} is defined,
+  \texttt{\$XDG\_CONFIG\_HOME/nim/config.nims} or
+  \texttt{\textasciitilde{}/.config/nim/config.nims} (POSIX) or
+  \texttt{\%APPDATA\%/nim/config.nims} (Windows). This file can be
+  skipped with the \texttt{-\/-skipUserCfg} command line option.
+\item
+  \texttt{\$parentDir/config.nims} where \texttt{\$parentDir} stands for
+  any parent directory of the project file's path. These files can be
+  skipped with the \texttt{-\/-skipParentCfg} command line option.
+\item
+  \texttt{\$projectDir/config.nims} where \texttt{\$projectDir} stands
+  for the project's path. This file can be skipped with the
+  \texttt{-\/-skipProjCfg} command line option.
+\item
+  A project can also have a project specific configuration file named
+  \texttt{\$project.nims} that resides in the same directory as
+  \texttt{\$project.nim}. This file can be skipped with the same
+  \texttt{-\/-skipProjCfg} command line option.
+\end{enumerate}
+
+For available procs and implementation details see
+\href{nimscript.html}{nimscript}.
+
+\hypertarget{limitations}{%
+\subsection{Limitations}\label{limitations}}
+
+NimScript is subject to some limitations caused by the implementation of
+the VM (virtual machine):
+
+\begin{itemize}
+\tightlist
+\item
+  Nim's FFI (foreign function interface) is not available in NimScript.
+  This means that any stdlib module which relies on \texttt{importc} can
+  not be used in the VM.
+\item
+  \texttt{ptr} operations are are hard to emulate with the symbolic
+  representation the VM uses. They are available and tested extensively
+  but there are bugs left.
+\item
+  \texttt{var\ T} function arguments rely on \texttt{ptr} operations
+  internally and might also be problematic in some cases.
+\item
+  More than one level of {ref} is generally not supported (for example,
+  the type {ref ref int}).
+\item
+  Multimethods are not available.
+\item
+  \texttt{random.randomize()} requires an \texttt{int64} explicitly
+  passed as argument, you \emph{must} pass a Seed integer.
+\end{itemize}
+
+\hypertarget{standard-library-modules}{%
+\subsection{Standard library modules}\label{standard-library-modules}}
+
+At least the following standard library modules are available:
+
+\begin{itemize}
+\tightlist
+\item
+  \href{macros.html}{macros}
+\item
+  \href{os.html}{os}
+\item
+  \href{strutils.html}{strutils}
+\item
+  \href{math.html}{math}
+\item
+  \href{distros.html}{distros}
+\item
+  \href{sugar.html}{sugar}
+\item
+  \href{algorithm.html}{algorithm}
+\item
+  \href{base64.html}{base64}
+\item
+  \href{bitops.html}{bitops}
+\item
+  \href{chains.html}{chains}
+\item
+  \href{colors.html}{colors}
+\item
+  \href{complex.html}{complex}
+\item
+  \href{htmlgen.html}{htmlgen}
+\item
+  \href{httpcore.html}{httpcore}
+\item
+  \href{lenientops.html}{lenientops}
+\item
+  \href{mersenne.html}{mersenne}
+\item
+  \href{options.html}{options}
+\item
+  \href{parseutils.html}{parseutils}
+\item
+  \href{punycode.html}{punycode}
+\item
+  \href{punycode.html}{random}
+\item
+  \href{stats.html}{stats}
+\item
+  \href{strformat.html}{strformat}
+\item
+  \href{strmisc.html}{strmisc}
+\item
+  \href{strscans.html}{strscans}
+\item
+  \href{unicode.html}{unicode}
+\item
+  \href{uri.html}{uri}
+\item
+  \href{editdistance.html}{std/editdistance}
+\item
+  \href{wordwrap.html}{std/wordwrap}
+\item
+  \href{sums.html}{std/sums}
+\item
+  \href{parsecsv.html}{parsecsv}
+\item
+  \href{parsecfg.html}{parsecfg}
+\item
+  \href{parsesql.html}{parsesql}
+\item
+  \href{xmlparser.html}{xmlparser}
+\item
+  \href{htmlparser.html}{htmlparser}
+\item
+  \href{ropes.html}{ropes}
+\item
+  \href{json.html}{json}
+\item
+  \href{parsejson.html}{parsejson}
+\item
+  \href{strtabs.html}{strtabs}
+\item
+  \href{unidecode.html}{unidecode}
+\end{itemize}
+
+In addition to the standard Nim syntax (\href{system.html}{system}
+module), NimScripts support the procs and templates defined in the
+\href{nimscript.html}{nimscript} module too.
+
+See also: *
+\href{https://github.com/nim-lang/Nim/blob/devel/tests/test_nimscript.nims}{Check
+the tests for more information about modules compatible with NimScript.}
+
+\hypertarget{nimscript-as-a-configuration-file}{%
+\subsection{NimScript as a configuration
+file}\label{nimscript-as-a-configuration-file}}
+
+A command-line switch \texttt{-\/-FOO} is written as
+\texttt{switch("FOO")} in NimScript. Similarly, command-line
+\texttt{-\/-FOO:VAL} translates to \texttt{switch("FOO",\ "VAL")}.
+
+Here are few examples of using the \texttt{switch} proc:
+
+\begin{verbatim}
+\end{verbatim}
+
+NimScripts also support \texttt{-\/-} templates for convenience, which
+look like command-line switches written as-is in the NimScript file. So
+the above example can be rewritten as:
+
+\begin{verbatim}
+\end{verbatim}
+
+\textbf{Note}: In general, the \emph{define} switches can also be set in
+NimScripts using \texttt{switch} or \texttt{-\/-}, as shown in above
+examples. Only the \texttt{release} define (\texttt{-d:release}) cannot
+be set in NimScripts.
+
+\hypertarget{nimscript-as-a-build-tool}{%
+\subsection{NimScript as a build tool}\label{nimscript-as-a-build-tool}}
+
+The \texttt{task} template that the \texttt{system} module defines
+allows a NimScript file to be used as a build tool. The following
+example defines a task \texttt{build} that is an alias for the
+\texttt{c} command:
+
+\begin{verbatim}
+\end{verbatim}
+
+In fact, as a convention the following tasks should be available:
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+Task & Description\tabularnewline
+\midrule
+\endhead
+\texttt{help} & List all the available NimScript tasks along with their
+docstrings.\tabularnewline
+\texttt{build} & Build the project with the required backend
+(\texttt{c}, \texttt{cpp} or \texttt{js}).\tabularnewline
+\texttt{tests} & Runs the tests belonging to the project.\tabularnewline
+\texttt{bench} & Runs benchmarks belonging to the
+project.\tabularnewline
+\bottomrule
+\end{longtable}
+
+Look at the module \href{distros.html}{distros} for some support of the
+OS's native package managers.
+
+\hypertarget{nimble-integration}{%
+\subsection{Nimble integration}\label{nimble-integration}}
+
+See the \href{https://github.com/nim-lang/nimble\#readme}{Nimble readme}
+for more information.
+
+\hypertarget{standalone-nimscript}{%
+\subsection{Standalone NimScript}\label{standalone-nimscript}}
+
+NimScript can also be used directly as a portable replacement for Bash
+and Batch files. Use \texttt{nim\ myscript.nims} to run
+\texttt{myscript.nims}. For example, installation of Nimble could be
+accomplished with this simple script:
+
+\begin{verbatim}
+mode = ScriptMode.Verbose
+
+var id = 0
+while dirExists("nimble" & $id):
+  inc id
+
+exec "git clone https://github.com/nim-lang/nimble.git nimble" & $id
+
+withDir "nimble" & $id & "/src":
+  exec "nim c nimble"
+
+mvFile "nimble" & $id & "/src/nimble".toExe, "bin/nimble".toExe
+\end{verbatim}
+
+On Unix, you can also use the shebang \texttt{\#!/usr/bin/env\ nim}, as
+long as your filename ends with \texttt{.nims}:
+
+\begin{verbatim}
+#!/usr/bin/env nim
+mode = ScriptMode.Silent
+
+echo "hello world"
+\end{verbatim}
+
+Use \texttt{\#!/usr/bin/env\ -S\ nim\ -\/-hints:off} to disable hints.
+
+\hypertarget{benefits}{%
+\subsection{Benefits}\label{benefits}}
+
+\hypertarget{cross-platform}{%
+\subsubsection{Cross-Platform}\label{cross-platform}}
+
+It is a cross-platform scripting language that can run where Nim can
+run, e.g. you can not run Batch or PowerShell on Linux or Mac, the Bash
+for Linux might not run on Mac, there are no unit tests tools for Batch,
+etc.
+
+NimScript can detect on which platform, operating system, architecture,
+and even which Linux distribution is running on, allowing the same
+script to support a lot of systems.
+
+See the following (incomplete) example:
+
+\begin{verbatim}
+import distros
+
+# Architectures.
+if defined(amd64):
+  echo "Architecture is x86 64Bits"
+elif defined(i386):
+  echo "Architecture is x86 32Bits"
+elif defined(arm):
+  echo "Architecture is ARM"
+
+# Operating Systems.
+if defined(linux):
+  echo "Operating System is GNU Linux"
+elif defined(windows):
+  echo "Operating System is Microsoft Windows"
+elif defined(macosx):
+  echo "Operating System is Apple OS X"
+
+# Distros.
+if detectOs(Ubuntu):
+  echo "Distro is Ubuntu"
+elif detectOs(ArchLinux):
+  echo "Distro is ArchLinux"
+elif detectOs(Debian):
+  echo "Distro is Debian"
+\end{verbatim}
+
+\hypertarget{uniform-syntax}{%
+\subsubsection{Uniform Syntax}\label{uniform-syntax}}
+
+The syntax, style, and rest of the ecosystem is the same as for compiled
+Nim, that means there is nothing new to learn, no context switch for
+developers.
+
+\hypertarget{powerful-metaprogramming}{%
+\subsubsection{Powerful
+Metaprogramming}\label{powerful-metaprogramming}}
+
+NimScript can use Nim's templates, macros, types, concepts, effect
+tracking system, and more, you can create modules that work on compiled
+Nim and also on interpreted NimScript.
+
+\texttt{func} will still check for side effects, \texttt{debugEcho} also
+works as expected, making it ideal for functional scripting
+metaprogramming.
+
+This is an example of a third party module that uses macros and
+templates to translate text strings on unmodified NimScript:
+
+\begin{verbatim}
+import nimterlingua
+nimterlingua("translations.cfg")
+echo "cat"  # Run with -d:RU becomes "kot", -d:ES becomes "gato", ...
+\end{verbatim}
+
+translations.cfg
+
+\begin{verbatim}
+[cat]
+ES = gato
+PT = minino
+RU = kot
+FR = chat
+\end{verbatim}
+
+\begin{itemize}
+\tightlist
+\item
+  \href{https://nimble.directory/pkg/nimterlingua}{Nimterlingua}
+\end{itemize}
+
+\hypertarget{graceful-fallback}{%
+\subsubsection{Graceful Fallback}\label{graceful-fallback}}
+
+Some features of compiled Nim may not work on NimScript, but often a
+graceful and seamless fallback degradation is used.
+
+See the following NimScript:
+
+\begin{verbatim}
+if likely(true):
+  discard
+elif unlikely(false):
+  discard
+
+proc foo() {.compiletime.} = echo NimVersion
+
+static:
+  echo CompileDate
+\end{verbatim}
+
+\texttt{likely()}, \texttt{unlikely()}, \texttt{static:} and
+\texttt{\{.compiletime.\}} will produce no code at all when run on
+NimScript, but still no error nor warning is produced and the code just
+works.
+
+\hypertarget{evolving-scripting-language}{%
+\subsubsection{Evolving Scripting
+language}\label{evolving-scripting-language}}
+
+NimScript evolves together with Nim,
+\href{https://github.com/nim-lang/Nim/pulls?utf8=\%E2\%9C\%93\&q=nimscript}{occasionally
+new features might become available on NimScript} , adapted from
+compiled Nim or added as new features on both.
+
+\hypertarget{scripting-language-with-a-package-manager}{%
+\subsubsection{Scripting Language with a Package
+Manager}\label{scripting-language-with-a-package-manager}}
+
+You can create your own modules to be compatible with NimScript, and
+check \href{https://nimble.directory}{Nimble} to search for third party
+modules that may work on NimScript.
+
+\hypertarget{devops-scripting}{%
+\subsubsection{DevOps Scripting}\label{devops-scripting}}
+
+You can use NimScript to deploy to production, run tests, build
+projects, do benchmarks, generate documentation, and all kinds of
+DevOps/SysAdmin specific tasks.
+
+\begin{itemize}
+\tightlist
+\item
+  \href{https://github.com/kaushalmodi/nim_config\#list-available-tasks}{An
+  example of a third party NimScript that can be used as a
+  project-agnostic tool.}
+\end{itemize}
